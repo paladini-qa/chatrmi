@@ -33,14 +33,11 @@ public class ChatClientGUI extends JFrame {
         setSize(800, 600);
         setLocationRelativeTo(null);
 
-        // Layout principal
         setLayout(new BorderLayout());
 
-        // Painel principal - agora é apenas um painel de controle
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        // Painel de informações
         JPanel infoPanel = new JPanel(new BorderLayout());
         infoPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
@@ -49,7 +46,6 @@ public class ChatClientGUI extends JFrame {
         welcomeLabel.setHorizontalAlignment(SwingConstants.CENTER);
         infoPanel.add(welcomeLabel, BorderLayout.CENTER);
 
-        // Painel de botões principais
         JPanel buttonsPanel = new JPanel(new GridLayout(2, 1, 10, 10));
         buttonsPanel.setBorder(new EmptyBorder(20, 50, 20, 50));
 
@@ -75,25 +71,21 @@ public class ChatClientGUI extends JFrame {
         infoPanel.add(buttonsPanel, BorderLayout.SOUTH);
         mainPanel.add(infoPanel, BorderLayout.CENTER);
 
-        // Painel lateral com lista de usuários e arquivos
         JPanel sidePanel = new JPanel(new BorderLayout());
         sidePanel.setPreferredSize(new Dimension(250, 0));
         sidePanel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        // Botão de grupos destacado no topo
         JPanel groupsPanelTop = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton groupsButtonTop = new JButton("GRUPOS");
         groupsButtonTop.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 14));
         groupsButtonTop.setPreferredSize(new Dimension(220, 40));
-        groupsButtonTop.setBackground(new Color(100, 149, 237)); // Cor azul
+        groupsButtonTop.setBackground(new Color(100, 149, 237));
         groupsButtonTop.setForeground(Color.WHITE);
         groupsButtonTop.addActionListener(e -> openGroupsWindow());
         groupsPanelTop.add(groupsButtonTop);
 
-        // Painel principal lateral com abas
         JPanel mainSidePanel = new JPanel(new BorderLayout());
 
-        // Lista de usuários
         JPanel usersPanel = new JPanel(new BorderLayout());
         JLabel usersLabel = new JLabel("Usuários Online:");
         usersLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
@@ -108,7 +100,6 @@ public class ChatClientGUI extends JFrame {
         usersPanel.add(usersLabel, BorderLayout.NORTH);
         usersPanel.add(usersScrollPane, BorderLayout.CENTER);
 
-        // Apenas lista de usuários (arquivos removidos)
         mainSidePanel.add(usersPanel, BorderLayout.CENTER);
 
         statusLabel = new JLabel("Conectado");
@@ -119,11 +110,9 @@ public class ChatClientGUI extends JFrame {
         sidePanel.add(mainSidePanel, BorderLayout.CENTER);
         sidePanel.add(statusLabel, BorderLayout.SOUTH);
 
-        // Adiciona componentes ao frame
         add(mainPanel, BorderLayout.CENTER);
         add(sidePanel, BorderLayout.EAST);
 
-        // Handler para fechamento da janela
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -131,8 +120,6 @@ public class ChatClientGUI extends JFrame {
                 System.exit(0);
             }
         });
-
-        // Não precisa mais de foco no campo de mensagem aqui
     }
 
     private void openGlobalChatWindow() {
@@ -162,12 +149,8 @@ public class ChatClientGUI extends JFrame {
         }
     }
 
-    /**
-     * Adiciona uma mensagem à área de chat
-     */
     public void appendMessage(String username, String message) {
         if (globalChatGUI != null && globalChatGUI.isVisible()) {
-            // Não mostra mensagens próprias aqui pois já foram mostradas ao enviar
             boolean isSent = username.equals(client.getUsername());
             if (!isSent) {
                 globalChatGUI.appendMessage(username, message, false);
@@ -178,14 +161,10 @@ public class ChatClientGUI extends JFrame {
     public void appendFile(String username, String filename) {
         if (globalChatGUI != null && globalChatGUI.isVisible()) {
             boolean isSent = username.equals(client.getUsername());
-            // Sempre mostra (próprio ou recebido), pois o callback já filtra próprios
             globalChatGUI.appendFile(username, filename, isSent);
         }
     }
 
-    /**
-     * Atualiza a lista de usuários online
-     */
     public void updateUsersList(String[] users) {
         SwingUtilities.invokeLater(() -> {
             usersListModel.clear();
@@ -211,8 +190,6 @@ public class ChatClientGUI extends JFrame {
             groupManagementGUI.requestFocus();
         }
     }
-
-    // ========== MÉTODOS DE NOTIFICAÇÃO DE GRUPOS ==========
 
     public void onGroupCreated(com.chatrmi.interfaces.ChatService.GroupInfo groupInfo) {
         if (groupManagementGUI != null) {
@@ -248,14 +225,12 @@ public class ChatClientGUI extends JFrame {
     }
 
     public void onGroupMessageReceived(String groupId, String groupName, String username, String message) {
-        // Tenta enviar para janela de chat do grupo se estiver aberta
         if (groupManagementGUI != null) {
             groupManagementGUI.onGroupMessageReceived(groupId, groupName, username, message);
         }
     }
 
     public void onGroupFileReceived(String groupId, String groupName, String username, String filename) {
-        // Tenta enviar para janela de chat do grupo se estiver aberta
         if (groupManagementGUI != null) {
             groupManagementGUI.onGroupFileReceived(groupId, groupName, username, filename);
         }
@@ -276,12 +251,8 @@ public class ChatClientGUI extends JFrame {
         }
     }
 
-    /**
-     * Método principal para iniciar o cliente
-     */
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            // Solicita nome do usuário
             String username = JOptionPane.showInputDialog(
                     null,
                     "Digite seu nome:",
@@ -300,7 +271,6 @@ public class ChatClientGUI extends JFrame {
                 ChatClientGUI gui = new ChatClientGUI(client);
                 gui.setVisible(true);
 
-                // Conecta ao servidor
                 boolean connected = client.connect();
                 if (!connected) {
                     JOptionPane.showMessageDialog(

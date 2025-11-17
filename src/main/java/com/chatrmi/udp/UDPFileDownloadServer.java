@@ -43,7 +43,6 @@ public class UDPFileDownloadServer {
     }
     
     private void handleDownloadRequest() throws IOException {
-        // Recebe solicitação (nome do arquivo)
         byte[] requestBuffer = new byte[2048];
         DatagramPacket requestPacket = new DatagramPacket(requestBuffer, requestBuffer.length);
         socket.receive(requestPacket);
@@ -51,12 +50,10 @@ public class UDPFileDownloadServer {
         InetAddress clientAddress = requestPacket.getAddress();
         int clientPort = requestPacket.getPort();
         
-        // Parse do nome do arquivo
         String filename = new String(requestBuffer, 0, requestPacket.getLength(), StandardCharsets.UTF_8);
         File file = new File(uploadDir, filename);
         
         if (!file.exists() || !file.isFile()) {
-            // Envia erro
             byte[] errorMsg = "FILE_NOT_FOUND".getBytes(StandardCharsets.UTF_8);
             DatagramPacket errorPacket = new DatagramPacket(
                 errorMsg, errorMsg.length, clientAddress, clientPort
@@ -68,7 +65,6 @@ public class UDPFileDownloadServer {
         long fileSize = file.length();
         System.out.println("Enviando arquivo: " + filename + " (" + fileSize + " bytes) para " + clientAddress);
         
-        // Envia cabeçalho (filename + filesize)
         byte[] filenameBytes = filename.getBytes(StandardCharsets.UTF_8);
         ByteBuffer headerBuffer = ByteBuffer.allocate(2048);
         headerBuffer.putInt(filenameBytes.length);
@@ -84,7 +80,6 @@ public class UDPFileDownloadServer {
         );
         socket.send(headerPacket);
         
-        // Envia arquivo em chunks
         try (FileInputStream fis = new FileInputStream(file)) {
             byte[] buffer = new byte[8192];
             long sent = 0;
@@ -100,7 +95,6 @@ public class UDPFileDownloadServer {
                 
                 sent += bytesRead;
                 
-                // Pequeno delay para evitar sobrecarga
                 try {
                     Thread.sleep(1);
                 } catch (InterruptedException e) {

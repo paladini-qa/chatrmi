@@ -41,7 +41,6 @@ public class UDPFileClient {
             String filename = file.getName();
             long fileSize = file.length();
             
-            // Prepara cabeçalho
             byte[] usernameBytes = username.getBytes(StandardCharsets.UTF_8);
             byte[] filenameBytes = filename.getBytes(StandardCharsets.UTF_8);
             
@@ -56,7 +55,6 @@ public class UDPFileClient {
             headerBuffer.rewind();
             headerBuffer.get(header);
             
-            // Envia cabeçalho
             DatagramPacket headerPacket = new DatagramPacket(
                 header, header.length, serverAddress, serverPort
             );
@@ -64,7 +62,6 @@ public class UDPFileClient {
             
             System.out.println("Enviando arquivo: " + filename + " (" + fileSize + " bytes)");
             
-            // Envia arquivo em chunks
             byte[] buffer = new byte[8192];
             long sent = 0;
             
@@ -78,8 +75,6 @@ public class UDPFileClient {
                 socket.send(packet);
                 
                 sent += bytesRead;
-                
-                // Pequeno delay para evitar sobrecarga
                 Thread.sleep(1);
             }
             

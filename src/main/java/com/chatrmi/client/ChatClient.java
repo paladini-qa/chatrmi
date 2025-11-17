@@ -33,24 +33,16 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         this.udpFileDownloadClient = new UDPFileDownloadClient(SERVER_HOST, UDP_DOWNLOAD_PORT);
     }
     
-    /**
-     * Conecta ao servidor RMI
-     */
     public boolean connect() {
         try {
             Registry registry = LocateRegistry.getRegistry("localhost", 1099);
             chatService = (ChatService) registry.lookup("ChatService");
-            
-            // Registra o callback
             chatService.registerClient(username, this);
             
-            // Obtém lista inicial de usuários
             String[] users = chatService.getOnlineUsers();
             if (gui != null) {
                 gui.updateUsersList(users);
             }
-            
-            // Arquivos agora são mostrados via bubbles no chat
             
             return true;
         } catch (RemoteException | NotBoundException e) {
@@ -60,9 +52,6 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         }
     }
     
-    /**
-     * Desconecta do servidor
-     */
     public void disconnect() {
         try {
             if (chatService != null) {
@@ -73,9 +62,6 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         }
     }
     
-    /**
-     * Envia uma mensagem
-     */
     public void sendMessage(String message) {
         try {
             if (chatService != null) {
@@ -87,20 +73,12 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         }
     }
     
-    /**
-     * Envia um arquivo
-     */
     public void sendFile(File file) {
         new Thread(() -> {
-            boolean success = udpFileClient.sendFile(file, username);
-            // Não mostra aqui porque já foi mostrado ao selecionar o arquivo
-            // e também será mostrado via callback quando o servidor confirmar
+            udpFileClient.sendFile(file, username);
         }).start();
     }
     
-    /**
-     * Callback: chamado pelo servidor quando uma mensagem é recebida
-     */
     @Override
     public void onMessageReceived(String username, String message) throws RemoteException {
         if (gui != null) {
@@ -108,21 +86,13 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         }
     }
     
-    /**
-     * Callback: chamado pelo servidor quando um arquivo é recebido
-     */
     @Override
     public void onFileReceived(String username, String filename) throws RemoteException {
         if (gui != null) {
-            // O servidor já filtra e não envia notificação para o próprio usuário
-            // Então sempre mostra aqui (são arquivos de outras pessoas)
             gui.appendFile(username, filename);
         }
     }
     
-    /**
-     * Baixa um arquivo do servidor
-     */
     public void downloadFile(String filename) {
         new Thread(() -> {
             if (gui != null) {
@@ -134,11 +104,9 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
             if (gui != null) {
                 if (downloadedFile != null) {
                     gui.appendMessage("Sistema", "Arquivo baixado com sucesso: " + filename);
-                    // Abre pasta de downloads
                     try {
                         java.awt.Desktop.getDesktop().open(new java.io.File(udpFileDownloadClient.getDownloadDir()));
                     } catch (Exception e) {
-                        // Ignora erro ao abrir pasta
                     }
                 } else {
                     gui.appendMessage("Sistema", "Erro ao baixar arquivo: " + filename);
@@ -147,9 +115,6 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         }).start();
     }
     
-    /**
-     * Obtém lista de arquivos disponíveis
-     */
     public String[] getAvailableFiles() {
         try {
             if (chatService != null) {
@@ -161,17 +126,12 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         return new String[0];
     }
     
-    /**
-     * Callback: chamado pelo servidor quando a lista de usuários é atualizada
-     */
     @Override
     public void onUsersUpdated(String[] users) throws RemoteException {
         if (gui != null) {
             gui.updateUsersList(users);
         }
     }
-    
-    // ========== CALLBACKS DE GRUPOS ==========
     
     @Override
     public void onGroupCreated(com.chatrmi.interfaces.ChatService.GroupInfo groupInfo) throws RemoteException {
@@ -222,9 +182,6 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         }
     }
     
-    /**
-     * Define a interface gráfica
-     */
     public void setGUI(ChatClientGUI gui) {
         this.gui = gui;
     }
@@ -236,8 +193,6 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
     public ChatService getChatService() {
         return chatService;
     }
-    
-    // ========== MÉTODOS DE GRUPO PARA GUI ==========
     
     public String createGroup(String groupName) {
         try {

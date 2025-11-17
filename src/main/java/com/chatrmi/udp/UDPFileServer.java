@@ -28,7 +28,6 @@ public class UDPFileServer {
         this.running = false;
         this.uploadDir = "uploads";
         
-        // Cria diretório de uploads se não existir
         File dir = new File(uploadDir);
         if (!dir.exists()) {
             dir.mkdirs();
@@ -52,12 +51,10 @@ public class UDPFileServer {
     }
     
     private void receiveFile() throws IOException {
-        // Recebe cabeçalho (username + filename + filesize)
         byte[] headerBuffer = new byte[2048];
         DatagramPacket headerPacket = new DatagramPacket(headerBuffer, headerBuffer.length);
         socket.receive(headerPacket);
         
-        // Parse do cabeçalho
         ByteBuffer buffer = ByteBuffer.wrap(headerBuffer);
         int usernameLength = buffer.getInt();
         byte[] usernameBytes = new byte[usernameLength];
@@ -73,7 +70,6 @@ public class UDPFileServer {
         
         System.out.println("Recebendo arquivo: " + filename + " (" + fileSize + " bytes) de " + username);
         
-        // Recebe o arquivo em chunks
         File file = new File(uploadDir, filename);
         try (FileOutputStream fos = new FileOutputStream(file)) {
             long received = 0;
@@ -95,7 +91,6 @@ public class UDPFileServer {
         
         System.out.println("Arquivo recebido com sucesso: " + filename);
         
-        // Notifica o chatService sobre o arquivo recebido
         if (chatService != null) {
             chatService.notifyFileReceived(username, filename);
         }

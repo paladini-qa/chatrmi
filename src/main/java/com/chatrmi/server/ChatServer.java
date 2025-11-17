@@ -20,18 +20,13 @@ public class ChatServer {
     private static final int UDP_FILE_PORT = 9876;
     private static final int UDP_DOWNLOAD_PORT = 9877;
     
-    /**
-     * Tenta exportar o objeto remoto, tentando portas alternativas se necessário
-     */
     private static ChatService exportObject(ChatServiceImpl chatService, int preferredPort) throws Exception {
-        // Tenta a porta preferida primeiro
         try {
             return (ChatService) UnicastRemoteObject.exportObject(chatService, preferredPort);
         } catch (ExportException e) {
             if (e.getCause() instanceof BindException) {
                 System.out.println("Porta " + preferredPort + " está em uso. Tentando portas alternativas...");
                 
-                // Tenta portas de 1098 a 1105
                 for (int port = preferredPort + 1; port <= preferredPort + 7; port++) {
                     try {
                         ChatService stub = (ChatService) UnicastRemoteObject.exportObject(chatService, port);
@@ -41,11 +36,9 @@ public class ChatServer {
                         if (!(ex.getCause() instanceof BindException)) {
                             throw ex;
                         }
-                        // Continua tentando próxima porta
                     }
                 }
                 
-                // Se nenhuma porta funcionou, lança exceção com mensagem útil
                 throw new Exception("Não foi possível encontrar uma porta livre. " +
                     "Tente fechar processos usando as portas 1098-1105 ou reinicie o computador.", e);
             }
@@ -55,13 +48,9 @@ public class ChatServer {
     
     public static void main(String[] args) {
         try {
-            // Cria a implementação do serviço
             ChatServiceImpl chatService = new ChatServiceImpl();
-            
-            // Exporta o objeto remoto na porta especificada (ou alternativa)
             ChatService stub = exportObject(chatService, RMI_SERVER_PORT);
             
-            // Cria ou obtém o registry
             Registry registry;
             try {
                 registry = LocateRegistry.createRegistry(RMI_REGISTRY_PORT);
@@ -71,11 +60,9 @@ public class ChatServer {
                 System.out.println("RMI Registry encontrado na porta " + RMI_REGISTRY_PORT);
             }
             
-            // Registra o serviço
             registry.rebind("ChatService", stub);
             System.out.println("Servidor RMI iniciado e registrado como 'ChatService'");
             
-            // Inicia servidor UDP para arquivos
             UDPFileServer udpFileServer = new UDPFileServer(UDP_FILE_PORT, chatService);
             Thread udpThread = new Thread(() -> {
                 try {
@@ -89,7 +76,6 @@ public class ChatServer {
             udpThread.start();
             System.out.println("Servidor UDP iniciado na porta " + UDP_FILE_PORT);
             
-            // Inicia servidor UDP para download de arquivos
             UDPFileDownloadServer downloadServer = new UDPFileDownloadServer(UDP_DOWNLOAD_PORT);
             Thread downloadThread = new Thread(() -> {
                 try {

@@ -38,12 +38,10 @@ public class GroupChatGUI extends JFrame {
         
         setLayout(new BorderLayout());
         
-        // Painel de chat (centro)
         JPanel chatPanel = new JPanel(new BorderLayout());
         chatPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        chatPanel.setBackground(new Color(0xF0, 0xF0, 0xF0)); // Fundo cinza claro estilo WhatsApp
+        chatPanel.setBackground(new Color(0xF0, 0xF0, 0xF0));
         
-        // Area de mensagens com scroll
         chatArea = new JPanel();
         chatArea.setLayout(new BoxLayout(chatArea, BoxLayout.Y_AXIS));
         chatArea.setBackground(new Color(0xF0, 0xF0, 0xF0));
@@ -55,7 +53,6 @@ public class GroupChatGUI extends JFrame {
         scrollPane.setBorder(null);
         scrollPane.getViewport().setBackground(new Color(0xF0, 0xF0, 0xF0));
         
-        // Auto-scroll
         chatArea.addContainerListener(new java.awt.event.ContainerAdapter() {
             @Override
             public void componentAdded(java.awt.event.ContainerEvent e) {
@@ -68,7 +65,6 @@ public class GroupChatGUI extends JFrame {
         
         chatPanel.add(scrollPane, BorderLayout.CENTER);
         
-        // Painel de entrada de mensagem
         JPanel inputPanel = new JPanel(new BorderLayout());
         inputPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         inputPanel.setBackground(Color.WHITE);
@@ -90,7 +86,7 @@ public class GroupChatGUI extends JFrame {
         sendButton = new JButton("Enviar");
         sendButton.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
         sendButton.setPreferredSize(new Dimension(80, 35));
-        sendButton.setBackground(new Color(0x25, 0xD3, 0x66)); // Verde WhatsApp
+        sendButton.setBackground(new Color(0x25, 0xD3, 0x66));
         sendButton.setForeground(Color.WHITE);
         sendButton.setFocusPainted(false);
         sendButton.addActionListener(e -> sendMessage());
@@ -105,7 +101,6 @@ public class GroupChatGUI extends JFrame {
         
         chatPanel.add(inputPanel, BorderLayout.SOUTH);
         
-        // Painel lateral com lista de membros
         JPanel sidePanel = new JPanel(new BorderLayout());
         sidePanel.setPreferredSize(new Dimension(200, 0));
         sidePanel.setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -119,20 +114,15 @@ public class GroupChatGUI extends JFrame {
         membersList.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
         JScrollPane membersScrollPane = new JScrollPane(membersList);
         
-        // Adiciona membros à lista
         updateMembersList();
         
         sidePanel.add(membersLabel, BorderLayout.NORTH);
         sidePanel.add(membersScrollPane, BorderLayout.CENTER);
         
-        // Adiciona componentes ao frame
         add(chatPanel, BorderLayout.CENTER);
         add(sidePanel, BorderLayout.EAST);
         
-        // Foca no campo de mensagem
         messageField.requestFocus();
-        
-        // Mensagem de boas-vindas
         appendMessage("Sistema", "Você entrou no grupo: " + groupName, false);
     }
     
@@ -163,9 +153,7 @@ public class GroupChatGUI extends JFrame {
         int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             java.io.File selectedFile = fileChooser.getSelectedFile();
-            // Mostra o arquivo imediatamente na bubble (só mostra uma vez)
             appendFile(client.getUsername(), selectedFile.getName(), true);
-            // Envia o arquivo (não mostra novamente no callback pois já foi mostrado)
             client.sendFile(selectedFile);
         }
     }
@@ -173,16 +161,12 @@ public class GroupChatGUI extends JFrame {
     private void sendMessage() {
         String message = messageField.getText().trim();
         if (!message.isEmpty()) {
-            // Mostra a mensagem enviada imediatamente na janela
             appendMessage(client.getUsername(), message, true);
             client.sendGroupMessage(groupId, message);
             messageField.setText("");
         }
     }
     
-    /**
-     * Adiciona uma mensagem à área de chat
-     */
     public void appendMessage(String username, String message, boolean isSent) {
         SwingUtilities.invokeLater(() -> {
             java.time.LocalDateTime now = java.time.LocalDateTime.now();
@@ -192,13 +176,11 @@ public class GroupChatGUI extends JFrame {
             
             MessageBubble bubble = new MessageBubble(username, message, timestamp, isSent);
             chatArea.add(bubble);
-            chatArea.add(Box.createVerticalStrut(4)); // Espaço entre mensagens
+            chatArea.add(Box.createVerticalStrut(4));
             
-            // Atualiza o layout e scroll
             chatArea.revalidate();
             chatArea.repaint();
             
-            // Scroll automático para o final
             SwingUtilities.invokeLater(() -> {
                 JScrollBar vertical = scrollPane.getVerticalScrollBar();
                 vertical.setValue(vertical.getMaximum());
@@ -206,9 +188,6 @@ public class GroupChatGUI extends JFrame {
         });
     }
     
-    /**
-     * Adiciona um arquivo à área de chat
-     */
     public void appendFile(String username, String filename, boolean isSent) {
         SwingUtilities.invokeLater(() -> {
             java.time.LocalDateTime now = java.time.LocalDateTime.now();
@@ -216,16 +195,13 @@ public class GroupChatGUI extends JFrame {
                 java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
             );
             
-            // Sempre passa o client para que o botão de download funcione
             FileBubble fileBubble = new FileBubble(username, filename, timestamp, isSent, client);
             chatArea.add(fileBubble);
-            chatArea.add(Box.createVerticalStrut(4)); // Espaço entre mensagens
+            chatArea.add(Box.createVerticalStrut(4));
             
-            // Atualiza o layout e scroll
             chatArea.revalidate();
             chatArea.repaint();
             
-            // Scroll automático para o final
             SwingUtilities.invokeLater(() -> {
                 JScrollBar vertical = scrollPane.getVerticalScrollBar();
                 vertical.setValue(vertical.getMaximum());

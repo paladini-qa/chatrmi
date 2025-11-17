@@ -44,18 +44,12 @@ public class GroupManagementGUI extends JFrame {
         
         tabbedPane = new JTabbedPane();
         
-        // Aba: Grupos Disponíveis
         tabbedPane.addTab("Grupos Disponíveis", createAvailableGroupsPanel());
-        
-        // Aba: Meus Grupos
         tabbedPane.addTab("Meus Grupos", createMyGroupsPanel());
-        
-        // Aba: Convites Pendentes
         tabbedPane.addTab("Convites", createInvitesPanel());
         
         add(tabbedPane, BorderLayout.CENTER);
         
-        // Botão de atualizar
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton refreshButton = new JButton("Atualizar");
         refreshButton.addActionListener(e -> refreshAll());
@@ -103,7 +97,6 @@ public class GroupManagementGUI extends JFrame {
         myGroupsList = new JList<>(myGroupsModel);
         myGroupsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         
-        // Adiciona listener de double-click para abrir chat do grupo
         myGroupsList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -246,7 +239,6 @@ public class GroupManagementGUI extends JFrame {
             return;
         }
         
-        // Obter lista de usuários online
         String[] users = new String[0];
         try {
             users = client.getChatService().getOnlineUsers();
@@ -388,10 +380,8 @@ public class GroupManagementGUI extends JFrame {
             return;
         }
         
-        // Extrai o nome do grupo sem os sufixos (Dono) e (X membros)
         String groupName = groupInfo.getGroupName();
         
-        // Verifica se já existe uma janela aberta para este grupo
         GroupChatGUI existingChat = openGroupChats.get(groupId);
         if (existingChat != null && existingChat.isVisible()) {
             existingChat.toFront();
@@ -399,11 +389,9 @@ public class GroupManagementGUI extends JFrame {
             return;
         }
         
-        // Cria nova janela de chat
         GroupChatGUI groupChat = new GroupChatGUI(client, groupId, groupName, groupInfo);
         openGroupChats.put(groupId, groupChat);
         
-        // Listener para remover da lista quando fechar
         groupChat.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent windowEvent) {
@@ -417,7 +405,6 @@ public class GroupManagementGUI extends JFrame {
     public void onGroupMessageReceived(String groupId, String groupName, String username, String message) {
         GroupChatGUI chatWindow = openGroupChats.get(groupId);
         if (chatWindow != null) {
-            // Não mostra mensagens próprias aqui pois já foram mostradas ao enviar
             boolean isSent = username.equals(client.getUsername());
             if (!isSent) {
                 chatWindow.appendMessage(username, message, false);
@@ -434,7 +421,6 @@ public class GroupManagementGUI extends JFrame {
     }
     
     public void onGroupUpdated(String groupName, ChatService.GroupInfo groupInfo) {
-        // Atualiza janelas de chat abertas
         String groupId = groupInfo.getGroupId();
         GroupChatGUI chatWindow = openGroupChats.get(groupId);
         if (chatWindow != null) {
@@ -543,7 +529,6 @@ public class GroupManagementGUI extends JFrame {
         });
     }
     
-    // Métodos para notificações
     public void onGroupCreated(ChatService.GroupInfo groupInfo) {
         refreshAll();
     }

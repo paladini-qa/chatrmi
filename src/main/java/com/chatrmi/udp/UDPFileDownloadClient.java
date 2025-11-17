@@ -23,7 +23,6 @@ public class UDPFileDownloadClient {
         this.serverPort = serverPort;
         this.downloadDir = "downloads";
         
-        // Cria diretório de downloads se não existir
         File dir = new File(downloadDir);
         if (!dir.exists()) {
             dir.mkdirs();
@@ -39,15 +38,13 @@ public class UDPFileDownloadClient {
         try (DatagramSocket socket = new DatagramSocket()) {
             InetAddress serverAddress = InetAddress.getByName(serverHost);
             
-            // Envia solicitação de download
             byte[] request = filename.getBytes(StandardCharsets.UTF_8);
             DatagramPacket requestPacket = new DatagramPacket(
                 request, request.length, serverAddress, serverPort
             );
             socket.send(requestPacket);
-            socket.setSoTimeout(5000); // Timeout de 5 segundos
+            socket.setSoTimeout(5000);
             
-            // Recebe resposta (cabeçalho ou erro)
             byte[] responseBuffer = new byte[2048];
             DatagramPacket responsePacket = new DatagramPacket(
                 responseBuffer, responseBuffer.length
@@ -64,7 +61,6 @@ public class UDPFileDownloadClient {
                 return null;
             }
             
-            // Parse do cabeçalho
             ByteBuffer buffer = ByteBuffer.wrap(responseBuffer);
             int filenameLength = buffer.getInt();
             byte[] filenameBytes = new byte[filenameLength];
@@ -74,12 +70,11 @@ public class UDPFileDownloadClient {
             
             System.out.println("Recebendo arquivo: " + receivedFilename + " (" + fileSize + " bytes)");
             
-            // Recebe o arquivo em chunks
             File file = new File(downloadDir, receivedFilename);
             try (FileOutputStream fos = new FileOutputStream(file)) {
                 long received = 0;
                 byte[] dataBuffer = new byte[8192];
-                socket.setSoTimeout(10000); // Timeout maior para recepção
+                socket.setSoTimeout(10000);
                 
                 while (received < fileSize) {
                     DatagramPacket packet = new DatagramPacket(

@@ -38,11 +38,8 @@ public class ChatServiceImpl implements ChatService {
     public void sendMessage(String username, String message) throws RemoteException {
         System.out.println("[" + username + "]: " + message);
         
-        // Notifica observadores usando Observer pattern
         ChatObserver.MessageEvent event = new ChatObserver.MessageEvent(username, message);
         subject.notifyObservers(event);
-        
-        // Notifica todos os clientes via callback (servidor vai no cliente e roda update)
         broadcastMessage(username, message);
     }
     
@@ -51,12 +48,9 @@ public class ChatServiceImpl implements ChatService {
         clients.put(username, callback);
         System.out.println("Cliente registrado: " + username);
         
-        // Notifica sobre atualização de usuários
         String[] users = getOnlineUsers();
         ChatObserver.UserEvent event = new ChatObserver.UserEvent(users);
         subject.notifyObservers(event);
-        
-        // Notifica todos os clientes sobre a nova lista de usuários
         broadcastUsersUpdate();
     }
     
@@ -64,8 +58,6 @@ public class ChatServiceImpl implements ChatService {
     public void unregisterClient(String username) throws RemoteException {
         clients.remove(username);
         System.out.println("Cliente desconectado: " + username);
-        
-        // Notifica sobre atualização de usuários
         broadcastUsersUpdate();
     }
     
@@ -103,30 +95,21 @@ public class ChatServiceImpl implements ChatService {
         return new ChatService.FileInfo(filename, file.length());
     }
     
-    /**
-     * Envia mensagem para todos os clientes usando callback
-     */
     private void broadcastMessage(String username, String message) {
         clients.forEach((user, callback) -> {
             try {
-                // Servidor vai no cliente e roda o método update (callback)
                 callback.onMessageReceived(username, message);
             } catch (RemoteException e) {
                 System.err.println("Erro ao enviar mensagem para " + user + ": " + e.getMessage());
-                // Remove cliente desconectado
                 clients.remove(user);
             }
         });
     }
     
-    /**
-     * Notifica todos os clientes sobre atualização na lista de usuários
-     */
     private void broadcastUsersUpdate() {
         String[] users = clients.keySet().toArray(new String[0]);
         clients.forEach((user, callback) -> {
             try {
-                // Servidor vai no cliente e roda o método update
                 callback.onUsersUpdated(users);
             } catch (RemoteException e) {
                 System.err.println("Erro ao atualizar lista de usuários para " + user + ": " + e.getMessage());
@@ -135,18 +118,13 @@ public class ChatServiceImpl implements ChatService {
         });
     }
     
-    /**
-     * Notifica clientes sobre recebimento de arquivo
-     */
     public void notifyFileReceived(String username, String filename) {
         ChatObserver.FileEvent event = new ChatObserver.FileEvent(username, filename);
         subject.notifyObservers(event);
         
         clients.forEach((user, callback) -> {
             try {
-                // Não notifica o próprio usuário que enviou (já foi mostrado ao enviar)
                 if (!user.equals(username)) {
-                    // Servidor vai no cliente e roda o método update
                     callback.onFileReceived(username, filename);
                 }
             } catch (RemoteException e) {
@@ -156,14 +134,9 @@ public class ChatServiceImpl implements ChatService {
         });
     }
     
-    /**
-     * Retorna o subject para registro de observadores
-     */
     public ChatSubject getSubject() {
         return subject;
     }
-    
-    // ========== IMPLEMENTAÇÃO DE MÉTODOS DE GRUPOS ==========
     
     @Override
     public String createGroup(String groupName, String ownerUsername) throws RemoteException {
@@ -171,13 +144,10 @@ public class ChatServiceImpl implements ChatService {
         
         Group group = new Group(groupId, groupName, ownerUsername);
         groups.put(groupId, group);
-        
-        // Adiciona ao conjunto de grupos do usuário
         userGroups.computeIfAbsent(ownerUsername, k -> ConcurrentHashMap.newKeySet()).add(groupId);
         
         System.out.println("Grupo criado: " + groupName + " (ID: " + groupId + ", dono: " + ownerUsername + ")");
         
-        // Notifica todos os clientes sobre o novo grupo
         ChatService.GroupInfo groupInfo = convertToGroupInfo(group);
         broadcastGroupCreated(groupInfo);
         
@@ -210,12 +180,9 @@ public class ChatServiceImpl implements ChatService {
             throw new RemoteException("Usuário já é membro do grupo");
         }
         
-        // Adiciona convite pendente
         pendingInvites.computeIfAbsent(invitedUsername, k -> ConcurrentHashMap.newKeySet()).add(groupId);
-        
         System.out.println("Convite enviado: " + invitedUsername + " -> " + group.getGroupName());
         
-        // Notifica o usuário convidado
         ChatClientCallback callback = clients.get(invitedUsername);
         if (callback != null) {
             try {
@@ -247,7 +214,6 @@ public class ChatServiceImpl implements ChatService {
         
         System.out.println("Solicitação de entrada: " + username + " -> " + group.getGroupName());
         
-        // Notifica o dono do grupo
         String owner = group.getOwner();
         ChatClientCallback callback = clients.get(owner);
         if (callback != null) {
@@ -279,7 +245,6 @@ public class ChatServiceImpl implements ChatService {
             
             System.out.println("Solicitação aprovada: " + requestingUsername + " entrou em " + group.getGroupName());
             
-            // Notifica o usuário aprovado
             ChatClientCallback userCallback = clients.get(requestingUsername);
             if (userCallback != null) {
                 try {
@@ -290,13 +255,11 @@ public class ChatServiceImpl implements ChatService {
                 }
             }
             
-            // Notifica todos os membros sobre atualização
             ChatService.GroupInfo groupInfo = convertToGroupInfo(group);
             broadcastGroupUpdate(groupId, groupInfo);
         } else {
             System.out.println("Solicitação reprovada: " + requestingUsername + " não entrou em " + group.getGroupName());
             
-            // Notifica o usuário reprovado
             ChatClientCallback userCallback = clients.get(requestingUsername);
             if (userCallback != null) {
                 try {
@@ -328,7 +291,6 @@ public class ChatServiceImpl implements ChatService {
             
             System.out.println("Convite aceito: " + username + " entrou em " + group.getGroupName());
             
-            // Notifica o usuário que aceitou
             ChatClientCallback userCallback = clients.get(username);
             if (userCallback != null) {
                 try {
@@ -338,7 +300,6 @@ public class ChatServiceImpl implements ChatService {
                 }
             }
             
-            // Notifica todos os membros sobre atualização
             ChatService.GroupInfo groupInfo = convertToGroupInfo(group);
             broadcastGroupUpdate(groupId, groupInfo);
         } else {
@@ -355,7 +316,6 @@ public class ChatServiceImpl implements ChatService {
         
         System.out.println("[GRUPO:" + group.getGroupName() + "] [" + username + "]: " + message);
         
-        // Envia mensagem para todos os membros do grupo
         group.getMembers().forEach(member -> {
             ChatClientCallback callback = clients.get(member);
             if (callback != null) {
@@ -402,17 +362,14 @@ public class ChatServiceImpl implements ChatService {
             throw new RemoteException("Grupo não encontrado ou usuário não é membro");
         }
         
-        // Dono não pode sair (ou podemos permitir que saia e o grupo seja deletado)
         if (group.isOwner(username)) {
             throw new RemoteException("Dono do grupo não pode sair. Delete o grupo se necessário.");
         }
         
         group.removeMember(username);
         userGroups.getOrDefault(username, Collections.emptySet()).remove(groupId);
-        
         System.out.println("Usuário " + username + " saiu do grupo " + group.getGroupName());
         
-        // Notifica todos os membros sobre atualização
         ChatService.GroupInfo groupInfo = convertToGroupInfo(group);
         broadcastGroupUpdate(groupId, groupInfo);
     }
@@ -425,8 +382,6 @@ public class ChatServiceImpl implements ChatService {
         }
         return convertToGroupInfo(group);
     }
-    
-    // ========== MÉTODOS AUXILIARES ==========
     
     private ChatService.GroupInfo convertToGroupInfo(Group group) {
         String[] members = group.getMembers().toArray(new String[0]);
@@ -448,7 +403,6 @@ public class ChatServiceImpl implements ChatService {
         Group group = groups.get(groupId);
         if (group == null) return;
         
-        // Notifica apenas os membros do grupo
         group.getMembers().forEach(member -> {
             ChatClientCallback callback = clients.get(member);
             if (callback != null) {
@@ -462,11 +416,7 @@ public class ChatServiceImpl implements ChatService {
         });
     }
     
-    /**
-     * Classe interna que estende Subject para eventos de chat
-     */
     public static class ChatSubject extends Subject {
-        // Herda métodos attach, detach e notifyObservers de Subject
     }
 }
 
