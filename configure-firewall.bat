@@ -47,12 +47,32 @@ if %ERRORLEVEL% EQU 0 (
 )
 
 echo.
+echo Adicionando regras para portas dinamicas RMI (callbacks)...
+echo IMPORTANTE: Clientes precisam permitir conexoes de entrada para receber mensagens!
+echo.
+
+netsh advfirewall firewall add rule name="Chat RMI Dynamic Ports" dir=in action=allow protocol=TCP localport=1024-65535 2>nul
+if %ERRORLEVEL% EQU 0 (
+    echo [OK] Regra adicionada para portas dinamicas RMI (1024-65535)
+    echo       Esta regra permite callbacks do servidor para o cliente
+) else (
+    echo [AVISO] Falha ao adicionar regra para portas dinamicas
+    echo         Voce pode precisar configurar manualmente ou desativar o firewall temporariamente
+)
+
+echo.
 echo ========================================
 echo   CONFIGURACAO CONCLUIDA
 echo ========================================
 echo.
 echo As regras de firewall foram adicionadas.
-echo Agora voce pode executar o servidor e cliente.
+echo.
+echo IMPORTANTE PARA CLIENTES EM OUTROS PCs:
+echo - Execute este script TAMBEM no PC cliente
+echo - Ou configure manualmente o firewall para permitir:
+echo   * Conexoes de ENTRADA TCP (para receber callbacks)
+echo   * Conexoes de SAIDA TCP nas portas 1099, 1098
+echo   * Conexoes de SAIDA UDP nas portas 9876, 9877
 echo.
 pause
 

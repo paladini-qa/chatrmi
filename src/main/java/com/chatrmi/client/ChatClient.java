@@ -6,6 +6,8 @@ import com.chatrmi.udp.UDPFileClient;
 import com.chatrmi.udp.UDPFileDownloadClient;
 
 import java.io.File;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -26,16 +28,67 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
     private static final int UDP_FILE_PORT = 9876;
     private static final int UDP_DOWNLOAD_PORT = 9877;
     
+    /**
+     * Obtém o IP local do cliente (não loopback)
+     */
+    private static String getClientIP() {
+        try {
+            // Primeiro, verificar se já foi configurado via propriedade do sistema
+            String hostname = System.getProperty("java.rmi.server.hostname");
+            if (hostname != null && !hostname.isEmpty() && !hostname.equals("localhost")) {
+                return hostname;
+            }
+            
+            // Tentar obter IP da interface de rede principal (não loopback)
+            for (NetworkInterface iface : java.util.Collections.list(NetworkInterface.getNetworkInterfaces())) {
+                if (!iface.isLoopback() && iface.isUp()) {
+                    for (InetAddress addr : java.util.Collections.list(iface.getInetAddresses())) {
+                        if (addr instanceof java.net.Inet4Address && !addr.isLoopbackAddress()) {
+                            String ip = addr.getHostAddress();
+                            // Configurar para uso futuro
+                            System.setProperty("java.rmi.server.hostname", ip);
+                            System.out.println("IP do cliente detectado: " + ip);
+                            return ip;
+                        }
+                    }
+                }
+            }
+            
+            // Fallback: usar getLocalHost()
+            InetAddress localHost = InetAddress.getLocalHost();
+            String ip = localHost.getHostAddress();
+            System.setProperty("java.rmi.server.hostname", ip);
+            System.out.println("IP do cliente (fallback): " + ip);
+            return ip;
+        } catch (Exception e) {
+            System.err.println("Aviso: Não foi possível detectar o IP do cliente automaticamente. Usando 'localhost'.");
+            System.err.println("Isso pode causar problemas com callbacks em rede. Configure java.rmi.server.hostname manualmente.");
+            return "localhost";
+        }
+    }
+    
     public ChatClient(String username, String serverHost) throws RemoteException {
         super();
         this.username = username;
         this.serverHost = serverHost != null ? serverHost : "localhost";
+        
+        // IMPORTANTE: Configurar o IP do cliente ANTES de exportar o objeto remoto
+        // Isso permite que o servidor faça callbacks de volta ao cliente
+        String clientIP = getClientIP();
+        System.setProperty("java.rmi.server.hostname", clientIP);
+        System.out.println("Cliente configurado com IP: " + clientIP);
+        System.out.println("Conectando ao servidor: " + this.serverHost);
+        
         this.udpFileClient = new UDPFileClient(this.serverHost, UDP_FILE_PORT);
         this.udpFileDownloadClient = new UDPFileDownloadClient(this.serverHost, UDP_DOWNLOAD_PORT);
     }
     
     public boolean connect() {
         try {
+            String clientIP = System.getProperty("java.rmi.server.hostname");
+            System.out.println("\n=== CONECTANDO AO SERVIDOR ===");
+            System.out.println("IP do cliente (para callbacks): " + clientIP);
+            System.out.println("IP do servidor: " + serverHost);
             System.out.println("Tentando conectar ao servidor RMI em " + serverHost + ":1099...");
             
             // Configurar timeout para conexão
@@ -49,9 +102,14 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
             chatService = (ChatService) registry.lookup("ChatService");
             System.out.println("Serviço encontrado!");
             
-            System.out.println("Registrando cliente '" + username + "'...");
+            System.out.println("Registrando cliente '" + username + "' com callback...");
+            System.out.println("NOTA: O servidor precisa conseguir se conectar de volta a este cliente");
+            System.out.println("      usando o IP: " + clientIP);
+            System.out.println("      Certifique-se de que o firewall permite conexões de entrada TCP");
+            
             chatService.registerClient(username, this);
             System.out.println("Cliente registrado com sucesso!");
+            System.out.println("=== CONEXÃO ESTABELECIDA ===\n");
             
             String[] users = chatService.getOnlineUsers();
             if (gui != null) {

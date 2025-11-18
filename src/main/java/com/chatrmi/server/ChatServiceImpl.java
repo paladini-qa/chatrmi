@@ -46,7 +46,18 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public void registerClient(String username, ChatClientCallback callback) throws RemoteException {
         clients.put(username, callback);
-        System.out.println("Cliente registrado: " + username);
+        System.out.println("\n[CLIENTE REGISTRADO] " + username);
+        System.out.println("   Total de clientes conectados: " + clients.size());
+        
+        // Testar se o callback funciona
+        try {
+            callback.onUsersUpdated(getOnlineUsers());
+            System.out.println("   Callback testado com sucesso!");
+        } catch (RemoteException e) {
+            System.err.println("   [AVISO] Falha ao testar callback: " + e.getMessage());
+            System.err.println("   O cliente pode não conseguir receber mensagens!");
+            System.err.println("   Verifique se o firewall do cliente permite conexões TCP de entrada");
+        }
         
         String[] users = getOnlineUsers();
         ChatObserver.UserEvent event = new ChatObserver.UserEvent(users);
@@ -100,7 +111,13 @@ public class ChatServiceImpl implements ChatService {
             try {
                 callback.onMessageReceived(username, message);
             } catch (RemoteException e) {
-                System.err.println("Erro ao enviar mensagem para " + user + ": " + e.getMessage());
+                System.err.println("\n[ERRO] Falha ao enviar mensagem para " + user);
+                System.err.println("       Causa: " + e.getMessage());
+                if (e.getMessage() != null && (e.getMessage().contains("Connection") || e.getMessage().contains("refused"))) {
+                    System.err.println("       Possivel causa: Firewall bloqueando callbacks ou cliente desconectado");
+                    System.err.println("       O cliente precisa permitir conexões TCP de entrada para receber mensagens");
+                }
+                System.err.println("       Removendo cliente da lista...\n");
                 clients.remove(user);
             }
         });
@@ -112,7 +129,12 @@ public class ChatServiceImpl implements ChatService {
             try {
                 callback.onUsersUpdated(users);
             } catch (RemoteException e) {
-                System.err.println("Erro ao atualizar lista de usuários para " + user + ": " + e.getMessage());
+                System.err.println("\n[ERRO] Falha ao atualizar lista de usuários para " + user);
+                System.err.println("       Causa: " + e.getMessage());
+                if (e.getMessage() != null && (e.getMessage().contains("Connection") || e.getMessage().contains("refused"))) {
+                    System.err.println("       Possivel causa: Firewall bloqueando callbacks ou cliente desconectado");
+                }
+                System.err.println("       Removendo cliente da lista...\n");
                 clients.remove(user);
             }
         });
