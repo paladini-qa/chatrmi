@@ -269,6 +269,10 @@ public class ChatClientGUI extends JFrame {
             username = username.trim();
 
             try {
+                System.out.println("\n=== INICIANDO CLIENTE ===");
+                System.out.println("Usuário: " + username);
+                System.out.println("Servidor: " + serverHost);
+                
                 ChatClient client = new ChatClient(username, serverHost);
                 ChatClientGUI gui = new ChatClientGUI(client);
                 gui.setVisible(true);
@@ -284,22 +288,52 @@ public class ChatClientGUI extends JFrame {
                     errorMsg.append("4. Os PCs estão na mesma rede?\n");
                     errorMsg.append("\nVeja o console para mais detalhes.");
                     
+                    System.err.println("\n[ERRO] Falha na conexão. Verifique os erros acima.");
+                    System.err.println("O console permanecerá aberto para você ver os detalhes.");
+                    
                     JOptionPane.showMessageDialog(
                             gui,
                             errorMsg.toString(),
                             "Erro de Conexão",
                             JOptionPane.ERROR_MESSAGE);
+                    
                     System.exit(1);
                 } else {
                     gui.appendMessage("Sistema", "Conectado ao servidor " + serverHost + " como " + username);
                 }
-            } catch (Exception e) {
+            } catch (java.rmi.RemoteException e) {
+                System.err.println("\n[ERRO CRÍTICO] Falha ao criar cliente RMI:");
+                System.err.println("Causa: " + e.getMessage());
+                e.printStackTrace();
+                
+                String errorMsg = "Erro ao iniciar cliente RMI:\n\n" + 
+                                 e.getMessage() + "\n\n" +
+                                 "Possíveis causas:\n" +
+                                 "1. Porta já em uso\n" +
+                                 "2. Firewall bloqueando\n" +
+                                 "3. Erro de configuração de rede\n\n" +
+                                 "Veja o console para mais detalhes.";
+                
                 JOptionPane.showMessageDialog(
                         null,
-                        "Erro ao iniciar cliente: " + e.getMessage(),
+                        errorMsg,
+                        "Erro ao Iniciar Cliente",
+                        JOptionPane.ERROR_MESSAGE);
+                
+                System.err.println("\nO console permanecerá aberto para você ver os detalhes.");
+                System.exit(1);
+            } catch (Exception e) {
+                System.err.println("\n[ERRO INESPERADO] Falha ao iniciar cliente:");
+                System.err.println("Causa: " + e.getMessage());
+                e.printStackTrace();
+                
+                JOptionPane.showMessageDialog(
+                        null,
+                        "Erro ao iniciar cliente: " + e.getMessage() + "\n\nVeja o console para mais detalhes.",
                         "Erro",
                         JOptionPane.ERROR_MESSAGE);
-                e.printStackTrace();
+                
+                System.err.println("\nO console permanecerá aberto para você ver os detalhes.");
                 System.exit(1);
             }
         });

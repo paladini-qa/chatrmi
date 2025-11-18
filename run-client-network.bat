@@ -70,6 +70,41 @@ echo   netsh advfirewall firewall add rule name="Chat RMI Client" dir=out action
 echo   netsh advfirewall firewall add rule name="Chat UDP Client" dir=out action=allow protocol=UDP localport=9876,9877
 echo.
 
+echo Verificando se as classes foram compiladas...
+if not exist "target\classes\com\chatrmi\client\ChatClientGUI.class" (
+    echo [ERRO] Classe ChatClientGUI nao encontrada!
+    echo Verifique se a compilacao foi bem-sucedida.
+    pause
+    exit /b 1
+)
+echo [OK] Classes encontradas.
+
+echo.
+echo Iniciando cliente Java...
+echo Se o cliente fechar imediatamente, verifique os erros abaixo.
+echo.
+
 java -Djava.rmi.server.hostname=%CLIENT_IP% -cp "target/classes" com.chatrmi.client.ChatClientGUI %SERVER_IP%
 
+set JAVA_EXIT_CODE=%ERRORLEVEL%
+
+echo.
+echo ========================================
+echo   CLIENTE ENCERRADO
+echo ========================================
+if %JAVA_EXIT_CODE% NEQ 0 (
+    echo.
+    echo [ERRO] O cliente foi encerrado com codigo de erro: %JAVA_EXIT_CODE%
+    echo.
+    echo Possiveis causas:
+    echo - Erro de conexao com o servidor
+    echo - Classe nao encontrada (verifique a compilacao)
+    echo - Erro de inicializacao do Java
+    echo - Firewall bloqueando conexoes
+    echo.
+    echo Verifique os erros acima para mais detalhes.
+) else (
+    echo Cliente encerrado normalmente.
+)
+echo.
 pause
