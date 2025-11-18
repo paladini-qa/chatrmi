@@ -1,8 +1,5 @@
 package com.chatrmi.interfaces;
 
-import com.chatrmi.model.Group;
-import com.chatrmi.model.GroupRequest;
-
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 

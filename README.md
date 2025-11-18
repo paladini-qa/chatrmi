@@ -84,11 +84,88 @@ java -cp target/classes com.chatrmi.client.ChatClientGUI
 
 Ao iniciar o cliente, você será solicitado a inserir seu nome de usuário.
 
+## Conexão entre Dois PCs Diferentes
+
+Para conectar dois PCs diferentes na mesma rede:
+
+### 1. No PC Servidor
+
+Execute o script de rede:
+```bash
+run-server-network.bat
+```
+
+Quando solicitado, digite o IP deste computador (ou pressione Enter para auto-detectar).
+
+**Importante:** O servidor mostrará o IP que deve ser usado pelos clientes.
+
+### 2. No PC Cliente
+
+Execute o script de rede:
+```bash
+run-client-network.bat
+```
+
+Quando solicitado, digite o **IP do servidor** (o IP mostrado pelo servidor).
+
+### 3. Configurar Firewall
+
+**No PC Servidor**, execute como Administrador:
+```bash
+configure-firewall.bat
+```
+
+Ou manualmente no Windows:
+```powershell
+# Como Administrador
+netsh advfirewall firewall add rule name="Chat RMI Registry" dir=in action=allow protocol=TCP localport=1099
+netsh advfirewall firewall add rule name="Chat RMI Server" dir=in action=allow protocol=TCP localport=1098
+netsh advfirewall firewall add rule name="Chat UDP File" dir=in action=allow protocol=UDP localport=9876
+netsh advfirewall firewall add rule name="Chat UDP Download" dir=in action=allow protocol=UDP localport=9877
+```
+
+### 4. Testar Conectividade
+
+No PC Cliente, você pode testar a conectividade:
+```bash
+test-connection.bat
+```
+
+### Troubleshooting
+
+**Problema: "Erro ao conectar ao servidor"**
+
+1. **Verifique se o servidor está rodando**
+   - O servidor deve mostrar "=== SERVIDOR PRONTO ==="
+
+2. **Verifique o IP**
+   - No servidor, confirme o IP mostrado
+   - No cliente, use exatamente esse IP
+
+3. **Verifique o firewall**
+   - Execute `configure-firewall.bat` no servidor como Administrador
+   - Ou desative temporariamente o firewall para testar
+
+4. **Verifique a rede**
+   - Os PCs devem estar na mesma rede (mesmo Wi-Fi ou cabo)
+   - Teste ping: `ping <IP_DO_SERVIDOR>`
+
+5. **Verifique as portas**
+   - Use `test-connection.bat` para verificar se as portas estão acessíveis
+
+**Problema: "Connection refused" ou timeout**
+
+- O firewall está bloqueando
+- O IP está incorreto
+- O servidor não está escutando na porta correta
+- Os PCs não estão na mesma rede
+
 ## Portas Utilizadas
 
-- **RMI Registry**: 1099
-- **RMI Server**: 1098
-- **UDP File Server**: 9876
+- **RMI Registry**: 1099 (TCP)
+- **RMI Server**: 1098 (TCP)
+- **UDP File Server**: 9876 (UDP)
+- **UDP Download Server**: 9877 (UDP)
 
 ## Arquitetura
 
