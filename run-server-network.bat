@@ -54,6 +54,10 @@ echo.
 echo IMPORTANTE: Certifique-se de que o firewall permite
 echo conexoes nas portas 1099, 1098, 9876 e 9877
 echo.
+echo Para permitir no firewall do Windows, execute como Administrador:
+echo   netsh advfirewall firewall add rule name="Chat RMI" dir=in action=allow protocol=TCP localport=1099,1098
+echo   netsh advfirewall firewall add rule name="Chat UDP" dir=in action=allow protocol=UDP localport=9876,9877
+echo.
 echo Pressione qualquer tecla para iniciar o servidor...
 pause >nul
 

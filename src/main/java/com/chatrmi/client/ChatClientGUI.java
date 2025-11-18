@@ -275,9 +275,18 @@ public class ChatClientGUI extends JFrame {
 
                 boolean connected = client.connect();
                 if (!connected) {
+                    StringBuilder errorMsg = new StringBuilder();
+                    errorMsg.append("Erro ao conectar ao servidor em ").append(serverHost).append(".\n\n");
+                    errorMsg.append("Verifique:\n");
+                    errorMsg.append("1. O servidor está rodando?\n");
+                    errorMsg.append("2. O IP está correto?\n");
+                    errorMsg.append("3. Firewall permite conexões na porta 1099?\n");
+                    errorMsg.append("4. Os PCs estão na mesma rede?\n");
+                    errorMsg.append("\nVeja o console para mais detalhes.");
+                    
                     JOptionPane.showMessageDialog(
                             gui,
-                            "Erro ao conectar ao servidor em " + serverHost + ".\nVerifique se o servidor está rodando e se o IP está correto.",
+                            errorMsg.toString(),
                             "Erro de Conexão",
                             JOptionPane.ERROR_MESSAGE);
                     System.exit(1);

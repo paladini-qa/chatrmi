@@ -36,18 +36,67 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
     
     public boolean connect() {
         try {
+            System.out.println("Tentando conectar ao servidor RMI em " + serverHost + ":1099...");
+            
+            // Configurar timeout para conexão
+            System.setProperty("sun.rmi.transport.tcp.responseTimeout", "10000");
+            System.setProperty("sun.rmi.transport.tcp.readTimeout", "10000");
+            
             Registry registry = LocateRegistry.getRegistry(serverHost, 1099);
+            System.out.println("Registry localizado com sucesso!");
+            
+            System.out.println("Procurando serviço 'ChatService'...");
             chatService = (ChatService) registry.lookup("ChatService");
+            System.out.println("Serviço encontrado!");
+            
+            System.out.println("Registrando cliente '" + username + "'...");
             chatService.registerClient(username, this);
+            System.out.println("Cliente registrado com sucesso!");
             
             String[] users = chatService.getOnlineUsers();
             if (gui != null) {
                 gui.updateUsersList(users);
             }
             
+            System.out.println("Conexão estabelecida com sucesso!");
             return true;
-        } catch (RemoteException | NotBoundException e) {
-            System.err.println("Erro ao conectar: " + e.getMessage());
+        } catch (java.rmi.ConnectException e) {
+            System.err.println("\n[ERRO DE CONEXÃO]");
+            System.err.println("Não foi possível conectar ao servidor em " + serverHost + ":1099");
+            System.err.println("\nPossíveis causas:");
+            System.err.println("1. O servidor não está rodando");
+            System.err.println("2. O IP do servidor está incorreto");
+            System.err.println("3. Firewall bloqueando a conexão (porta 1099)");
+            System.err.println("4. Os PCs não estão na mesma rede");
+            System.err.println("\nDetalhes: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } catch (java.rmi.ConnectIOException e) {
+            System.err.println("\n[ERRO DE CONEXÃO]");
+            System.err.println("Erro de I/O ao conectar ao servidor em " + serverHost + ":1099");
+            System.err.println("\nPossíveis causas:");
+            System.err.println("1. Firewall bloqueando a conexão");
+            System.err.println("2. Rede não acessível");
+            System.err.println("3. Servidor não está escutando na porta 1099");
+            System.err.println("\nDetalhes: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } catch (NotBoundException e) {
+            System.err.println("\n[ERRO]");
+            System.err.println("O serviço 'ChatService' não foi encontrado no servidor");
+            System.err.println("Verifique se o servidor foi iniciado corretamente");
+            System.err.println("\nDetalhes: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        } catch (RemoteException e) {
+            System.err.println("\n[ERRO REMOTO]");
+            System.err.println("Erro ao comunicar com o servidor: " + e.getMessage());
+            System.err.println("\nDetalhes: " + e.getClass().getName());
+            e.printStackTrace();
+            return false;
+        } catch (Exception e) {
+            System.err.println("\n[ERRO INESPERADO]");
+            System.err.println("Erro inesperado ao conectar: " + e.getMessage());
             e.printStackTrace();
             return false;
         }

@@ -32,7 +32,10 @@ echo   INICIANDO CLIENTE
 echo ========================================
 echo Conectando ao servidor: %SERVER_IP%
 echo.
+echo IMPORTANTE: Certifique-se de que o firewall permite
+echo conexoes de saida nas portas 1099, 1098, 9876 e 9877
+echo.
 
-java -cp "target/classes" com.chatrmi.client.ChatClientGUI %SERVER_IP%
+java -Djava.rmi.server.hostname=%SERVER_IP% -cp "target/classes" com.chatrmi.client.ChatClientGUI %SERVER_IP%
 
 pause

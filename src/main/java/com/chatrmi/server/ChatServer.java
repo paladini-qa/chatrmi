@@ -48,10 +48,55 @@ public class ChatServer {
     
     private static String getLocalIP() {
         try {
+            // Tentar obter IP da interface de rede principal (não loopback)
+            java.net.NetworkInterface.getNetworkInterfaces().asIterator().forEachRemaining(iface -> {
+                try {
+                    if (!iface.isLoopback() && iface.isUp()) {
+                        iface.getInetAddresses().asIterator().forEachRemaining(addr -> {
+                            if (addr instanceof java.net.Inet4Address && !addr.isLoopbackAddress()) {
+                                // Encontrou um IP IPv4 válido
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    // Ignorar erros de interface
+                }
+            });
+            
+            // Fallback: usar getLocalHost()
             return java.net.InetAddress.getLocalHost().getHostAddress();
         } catch (Exception e) {
+            System.err.println("Aviso: Não foi possível detectar o IP automaticamente. Usando 'localhost'.");
             return "localhost";
         }
+    }
+    
+    private static void printNetworkInfo(String serverHost) {
+        System.out.println("\n=== INFORMAÇÕES DE REDE ===");
+        System.out.println("IP do servidor configurado: " + serverHost);
+        try {
+            java.net.InetAddress addr = java.net.InetAddress.getByName(serverHost);
+            System.out.println("Endereço resolvido: " + addr.getHostAddress());
+            
+            System.out.println("\nInterfaces de rede disponíveis:");
+            java.net.NetworkInterface.getNetworkInterfaces().asIterator().forEachRemaining(iface -> {
+                try {
+                    if (!iface.isLoopback() && iface.isUp()) {
+                        System.out.println("  - " + iface.getName() + ":");
+                        iface.getInetAddresses().asIterator().forEachRemaining(inetAddr -> {
+                            if (inetAddr instanceof java.net.Inet4Address) {
+                                System.out.println("    -> " + inetAddr.getHostAddress());
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    // Ignorar
+                }
+            });
+        } catch (Exception e) {
+            System.err.println("Erro ao obter informações de rede: " + e.getMessage());
+        }
+        System.out.println("============================\n");
     }
     
     public static void main(String[] args) {
@@ -59,11 +104,23 @@ public class ChatServer {
             // Obter IP do servidor (padrão: IP local)
             String serverHost = args.length > 0 ? args[0] : getLocalIP();
             System.setProperty("java.rmi.server.hostname", serverHost);
+            
             System.out.println("========================================");
             System.out.println("  SERVIDOR CHAT RMI - MODO REDE");
             System.out.println("========================================");
             System.out.println("IP do servidor: " + serverHost);
             System.out.println("========================================\n");
+            
+            // Mostrar informações de rede
+            printNetworkInfo(serverHost);
+            
+            System.out.println("IMPORTANTE: Para conectar de outro PC, use este IP: " + serverHost);
+            System.out.println("Certifique-se de que o firewall permite conexões nas portas:");
+            System.out.println("  - 1099 (RMI Registry)");
+            System.out.println("  - 1098 (RMI Server)");
+            System.out.println("  - 9876 (UDP File Server)");
+            System.out.println("  - 9877 (UDP Download Server)");
+            System.out.println();
             
             ChatServiceImpl chatService = new ChatServiceImpl();
             ChatService stub = exportObject(chatService, RMI_SERVER_PORT);
