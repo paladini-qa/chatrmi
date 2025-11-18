@@ -60,22 +60,8 @@ if "%SERVER_IP%"=="" (
 )
 
 echo.
-echo Auto-detectando IP deste computador (cliente)...
-set CLIENT_IP=
-for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4"') do (
-    set CLIENT_IP=%%a
-    goto :found_client_ip
-)
-:found_client_ip
-set CLIENT_IP=!CLIENT_IP: =!
-if "!CLIENT_IP!"=="" (
-    echo.
-    echo Nao foi possivel detectar o IP automaticamente.
-    echo Por favor, digite o IP deste computador (cliente):
-    set /p CLIENT_IP=
-) else (
-    echo [OK] IP do cliente detectado: !CLIENT_IP!
-)
+echo Digite o IP deste computador (cliente):
+set /p CLIENT_IP=
 
 if "!CLIENT_IP!"=="" (
     echo [ERRO] IP do cliente nao informado!
