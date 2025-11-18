@@ -22,20 +22,21 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
     private ChatClientGUI gui;
     private UDPFileClient udpFileClient;
     private UDPFileDownloadClient udpFileDownloadClient;
-    private static final String SERVER_HOST = "localhost";
+    private String serverHost;
     private static final int UDP_FILE_PORT = 9876;
     private static final int UDP_DOWNLOAD_PORT = 9877;
     
-    public ChatClient(String username) throws RemoteException {
+    public ChatClient(String username, String serverHost) throws RemoteException {
         super();
         this.username = username;
-        this.udpFileClient = new UDPFileClient(SERVER_HOST, UDP_FILE_PORT);
-        this.udpFileDownloadClient = new UDPFileDownloadClient(SERVER_HOST, UDP_DOWNLOAD_PORT);
+        this.serverHost = serverHost != null ? serverHost : "localhost";
+        this.udpFileClient = new UDPFileClient(this.serverHost, UDP_FILE_PORT);
+        this.udpFileDownloadClient = new UDPFileDownloadClient(this.serverHost, UDP_DOWNLOAD_PORT);
     }
     
     public boolean connect() {
         try {
-            Registry registry = LocateRegistry.getRegistry("localhost", 1099);
+            Registry registry = LocateRegistry.getRegistry(serverHost, 1099);
             chatService = (ChatService) registry.lookup("ChatService");
             chatService.registerClient(username, this);
             

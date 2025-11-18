@@ -46,8 +46,25 @@ public class ChatServer {
         }
     }
     
+    private static String getLocalIP() {
+        try {
+            return java.net.InetAddress.getLocalHost().getHostAddress();
+        } catch (Exception e) {
+            return "localhost";
+        }
+    }
+    
     public static void main(String[] args) {
         try {
+            // Obter IP do servidor (padrão: IP local)
+            String serverHost = args.length > 0 ? args[0] : getLocalIP();
+            System.setProperty("java.rmi.server.hostname", serverHost);
+            System.out.println("========================================");
+            System.out.println("  SERVIDOR CHAT RMI - MODO REDE");
+            System.out.println("========================================");
+            System.out.println("IP do servidor: " + serverHost);
+            System.out.println("========================================\n");
+            
             ChatServiceImpl chatService = new ChatServiceImpl();
             ChatService stub = exportObject(chatService, RMI_SERVER_PORT);
             

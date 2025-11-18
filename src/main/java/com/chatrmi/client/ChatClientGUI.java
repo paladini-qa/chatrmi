@@ -253,6 +253,8 @@ public class ChatClientGUI extends JFrame {
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
+            String serverHost = args.length > 0 ? args[0] : "localhost";
+            
             String username = JOptionPane.showInputDialog(
                     null,
                     "Digite seu nome:",
@@ -267,7 +269,7 @@ public class ChatClientGUI extends JFrame {
             username = username.trim();
 
             try {
-                ChatClient client = new ChatClient(username);
+                ChatClient client = new ChatClient(username, serverHost);
                 ChatClientGUI gui = new ChatClientGUI(client);
                 gui.setVisible(true);
 
@@ -275,12 +277,12 @@ public class ChatClientGUI extends JFrame {
                 if (!connected) {
                     JOptionPane.showMessageDialog(
                             gui,
-                            "Erro ao conectar ao servidor. Verifique se o servidor está rodando.",
+                            "Erro ao conectar ao servidor em " + serverHost + ".\nVerifique se o servidor está rodando e se o IP está correto.",
                             "Erro de Conexão",
                             JOptionPane.ERROR_MESSAGE);
                     System.exit(1);
                 } else {
-                    gui.appendMessage("Sistema", "Conectado ao servidor como " + username);
+                    gui.appendMessage("Sistema", "Conectado ao servidor " + serverHost + " como " + username);
                 }
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(
