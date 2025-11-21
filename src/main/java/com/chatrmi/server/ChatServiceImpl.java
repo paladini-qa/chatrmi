@@ -36,8 +36,6 @@ public class ChatServiceImpl implements ChatService {
     
     @Override
     public void sendMessage(String username, String message) throws RemoteException {
-        System.out.println("[" + username + "]: " + message);
-        
         ChatObserver.MessageEvent event = new ChatObserver.MessageEvent(username, message);
         subject.notifyObservers(event);
         broadcastMessage(username, message);
@@ -46,13 +44,10 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public void registerClient(String username, ChatClientCallback callback) throws RemoteException {
         clients.put(username, callback);
-        System.out.println("\n[CLIENTE REGISTRADO] " + username);
-        System.out.println("   Total de clientes conectados: " + clients.size());
         
         // Testar se o callback funciona
         try {
             callback.onUsersUpdated(getOnlineUsers());
-            System.out.println("   Callback testado com sucesso!");
         } catch (RemoteException e) {
             System.err.println("   [AVISO] Falha ao testar callback: " + e.getMessage());
             System.err.println("   O cliente pode não conseguir receber mensagens!");
@@ -68,7 +63,6 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public void unregisterClient(String username) throws RemoteException {
         clients.remove(username);
-        System.out.println("Cliente desconectado: " + username);
         broadcastUsersUpdate();
     }
     
@@ -168,8 +162,6 @@ public class ChatServiceImpl implements ChatService {
         groups.put(groupId, group);
         userGroups.computeIfAbsent(ownerUsername, k -> ConcurrentHashMap.newKeySet()).add(groupId);
         
-        System.out.println("Grupo criado: " + groupName + " (ID: " + groupId + ", dono: " + ownerUsername + ")");
-        
         ChatService.GroupInfo groupInfo = convertToGroupInfo(group);
         broadcastGroupCreated(groupInfo);
         
@@ -203,7 +195,6 @@ public class ChatServiceImpl implements ChatService {
         }
         
         pendingInvites.computeIfAbsent(invitedUsername, k -> ConcurrentHashMap.newKeySet()).add(groupId);
-        System.out.println("Convite enviado: " + invitedUsername + " -> " + group.getGroupName());
         
         ChatClientCallback callback = clients.get(invitedUsername);
         if (callback != null) {
@@ -234,8 +225,6 @@ public class ChatServiceImpl implements ChatService {
         GroupRequest request = new GroupRequest(username, groupId, group.getGroupName());
         group.addRequest(request);
         
-        System.out.println("Solicitação de entrada: " + username + " -> " + group.getGroupName());
-        
         String owner = group.getOwner();
         ChatClientCallback callback = clients.get(owner);
         if (callback != null) {
@@ -265,8 +254,6 @@ public class ChatServiceImpl implements ChatService {
             group.addMember(requestingUsername);
             userGroups.computeIfAbsent(requestingUsername, k -> ConcurrentHashMap.newKeySet()).add(groupId);
             
-            System.out.println("Solicitação aprovada: " + requestingUsername + " entrou em " + group.getGroupName());
-            
             ChatClientCallback userCallback = clients.get(requestingUsername);
             if (userCallback != null) {
                 try {
@@ -280,8 +267,6 @@ public class ChatServiceImpl implements ChatService {
             ChatService.GroupInfo groupInfo = convertToGroupInfo(group);
             broadcastGroupUpdate(groupId, groupInfo);
         } else {
-            System.out.println("Solicitação reprovada: " + requestingUsername + " não entrou em " + group.getGroupName());
-            
             ChatClientCallback userCallback = clients.get(requestingUsername);
             if (userCallback != null) {
                 try {
@@ -311,8 +296,6 @@ public class ChatServiceImpl implements ChatService {
             group.addMember(username);
             userGroups.computeIfAbsent(username, k -> ConcurrentHashMap.newKeySet()).add(groupId);
             
-            System.out.println("Convite aceito: " + username + " entrou em " + group.getGroupName());
-            
             ChatClientCallback userCallback = clients.get(username);
             if (userCallback != null) {
                 try {
@@ -324,8 +307,6 @@ public class ChatServiceImpl implements ChatService {
             
             ChatService.GroupInfo groupInfo = convertToGroupInfo(group);
             broadcastGroupUpdate(groupId, groupInfo);
-        } else {
-            System.out.println("Convite rejeitado: " + username + " não entrou em " + group.getGroupName());
         }
     }
     
@@ -335,8 +316,6 @@ public class ChatServiceImpl implements ChatService {
         if (group == null || !group.isMember(username)) {
             throw new RemoteException("Grupo não encontrado ou usuário não é membro");
         }
-        
-        System.out.println("[GRUPO:" + group.getGroupName() + "] [" + username + "]: " + message);
         
         group.getMembers().forEach(member -> {
             ChatClientCallback callback = clients.get(member);
@@ -390,7 +369,6 @@ public class ChatServiceImpl implements ChatService {
         
         group.removeMember(username);
         userGroups.getOrDefault(username, Collections.emptySet()).remove(groupId);
-        System.out.println("Usuário " + username + " saiu do grupo " + group.getGroupName());
         
         ChatService.GroupInfo groupInfo = convertToGroupInfo(group);
         broadcastGroupUpdate(groupId, groupInfo);

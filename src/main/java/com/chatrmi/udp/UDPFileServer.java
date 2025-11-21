@@ -37,7 +37,6 @@ public class UDPFileServer {
     public void start() throws SocketException {
         socket = new DatagramSocket(port);
         running = true;
-        System.out.println("Servidor UDP aguardando arquivos na porta " + port + "...");
         
         while (running) {
             try {
@@ -68,8 +67,6 @@ public class UDPFileServer {
         
         long fileSize = buffer.getLong();
         
-        System.out.println("Recebendo arquivo: " + filename + " (" + fileSize + " bytes) de " + username);
-        
         File file = new File(uploadDir, filename);
         try (FileOutputStream fos = new FileOutputStream(file)) {
             long received = 0;
@@ -88,8 +85,6 @@ public class UDPFileServer {
                 received += packetSize;
             }
         }
-        
-        System.out.println("Arquivo recebido com sucesso: " + filename);
         
         if (chatService != null) {
             chatService.notifyFileReceived(username, filename);

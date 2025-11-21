@@ -29,7 +29,6 @@ public class UDPFileDownloadServer {
     public void start() throws SocketException {
         socket = new DatagramSocket(port);
         running = true;
-        System.out.println("Servidor UDP de download aguardando solicitações na porta " + port + "...");
         
         while (running) {
             try {
@@ -63,7 +62,6 @@ public class UDPFileDownloadServer {
         }
         
         long fileSize = file.length();
-        System.out.println("Enviando arquivo: " + filename + " (" + fileSize + " bytes) para " + clientAddress);
         
         byte[] filenameBytes = filename.getBytes(StandardCharsets.UTF_8);
         ByteBuffer headerBuffer = ByteBuffer.allocate(2048);
@@ -103,8 +101,6 @@ public class UDPFileDownloadServer {
                 }
             }
         }
-        
-        System.out.println("Arquivo enviado com sucesso: " + filename);
     }
     
     public void stop() {

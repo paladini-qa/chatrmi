@@ -18,7 +18,7 @@ import java.rmi.server.UnicastRemoteObject;
  * Cliente do chat RMI com implementação de callback
  */
 public class ChatClient extends UnicastRemoteObject implements ChatClientCallback {
-    
+
     private ChatService chatService;
     private String username;
     private ChatClientGUI gui;
@@ -27,7 +27,7 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
     private String serverHost;
     private static final int UDP_FILE_PORT = 9876;
     private static final int UDP_DOWNLOAD_PORT = 9877;
-    
+
     /**
      * Obtém o IP local do cliente (não loopback)
      */
@@ -38,7 +38,7 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
             if (hostname != null && !hostname.isEmpty() && !hostname.equals("localhost")) {
                 return hostname;
             }
-            
+
             // Tentar obter IP da interface de rede principal (não loopback)
             for (NetworkInterface iface : java.util.Collections.list(NetworkInterface.getNetworkInterfaces())) {
                 if (!iface.isLoopback() && iface.isUp()) {
@@ -47,76 +47,54 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
                             String ip = addr.getHostAddress();
                             // Configurar para uso futuro
                             System.setProperty("java.rmi.server.hostname", ip);
-                            System.out.println("IP do cliente detectado: " + ip);
                             return ip;
                         }
                     }
                 }
             }
-            
+
             // Fallback: usar getLocalHost()
             InetAddress localHost = InetAddress.getLocalHost();
             String ip = localHost.getHostAddress();
             System.setProperty("java.rmi.server.hostname", ip);
-            System.out.println("IP do cliente (fallback): " + ip);
             return ip;
         } catch (Exception e) {
             System.err.println("Aviso: Não foi possível detectar o IP do cliente automaticamente. Usando 'localhost'.");
-            System.err.println("Isso pode causar problemas com callbacks em rede. Configure java.rmi.server.hostname manualmente.");
+            System.err.println(
+                    "Isso pode causar problemas com callbacks em rede. Configure java.rmi.server.hostname manualmente.");
             return "localhost";
         }
     }
-    
+
     public ChatClient(String username, String serverHost) throws RemoteException {
         super();
         this.username = username;
         this.serverHost = serverHost != null ? serverHost : "localhost";
-        
+
         // IMPORTANTE: Configurar o IP do cliente ANTES de exportar o objeto remoto
         // Isso permite que o servidor faça callbacks de volta ao cliente
         String clientIP = getClientIP();
         System.setProperty("java.rmi.server.hostname", clientIP);
-        System.out.println("Cliente configurado com IP: " + clientIP);
-        System.out.println("Conectando ao servidor: " + this.serverHost);
-        
+
         this.udpFileClient = new UDPFileClient(this.serverHost, UDP_FILE_PORT);
         this.udpFileDownloadClient = new UDPFileDownloadClient(this.serverHost, UDP_DOWNLOAD_PORT);
     }
-    
+
     public boolean connect() {
         try {
-            String clientIP = System.getProperty("java.rmi.server.hostname");
-            System.out.println("\n=== CONECTANDO AO SERVIDOR ===");
-            System.out.println("IP do cliente (para callbacks): " + clientIP);
-            System.out.println("IP do servidor: " + serverHost);
-            System.out.println("Tentando conectar ao servidor RMI em " + serverHost + ":1099...");
-            
             // Configurar timeout para conexão
             System.setProperty("sun.rmi.transport.tcp.responseTimeout", "10000");
             System.setProperty("sun.rmi.transport.tcp.readTimeout", "10000");
-            
+
             Registry registry = LocateRegistry.getRegistry(serverHost, 1099);
-            System.out.println("Registry localizado com sucesso!");
-            
-            System.out.println("Procurando serviço 'ChatService'...");
             chatService = (ChatService) registry.lookup("ChatService");
-            System.out.println("Serviço encontrado!");
-            
-            System.out.println("Registrando cliente '" + username + "' com callback...");
-            System.out.println("NOTA: O servidor precisa conseguir se conectar de volta a este cliente");
-            System.out.println("      usando o IP: " + clientIP);
-            System.out.println("      Certifique-se de que o firewall permite conexões de entrada TCP");
-            
             chatService.registerClient(username, this);
-            System.out.println("Cliente registrado com sucesso!");
-            System.out.println("=== CONEXÃO ESTABELECIDA ===\n");
-            
+
             String[] users = chatService.getOnlineUsers();
             if (gui != null) {
                 gui.updateUsersList(users);
             }
-            
-            System.out.println("Conexão estabelecida com sucesso!");
+
             return true;
         } catch (java.rmi.ConnectException e) {
             System.err.println("\n[ERRO DE CONEXÃO]");
@@ -159,7 +137,7 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
             return false;
         }
     }
-    
+
     public void disconnect() {
         try {
             if (chatService != null) {
@@ -169,7 +147,7 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
             System.err.println("Erro ao desconectar: " + e.getMessage());
         }
     }
-    
+
     public void sendMessage(String message) {
         try {
             if (chatService != null) {
@@ -180,35 +158,35 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
             e.printStackTrace();
         }
     }
-    
+
     public void sendFile(File file) {
         new Thread(() -> {
             udpFileClient.sendFile(file, username);
         }).start();
     }
-    
+
     @Override
     public void onMessageReceived(String username, String message) throws RemoteException {
         if (gui != null) {
             gui.appendMessage(username, message);
         }
     }
-    
+
     @Override
     public void onFileReceived(String username, String filename) throws RemoteException {
         if (gui != null) {
             gui.appendFile(username, filename);
         }
     }
-    
+
     public void downloadFile(String filename) {
         new Thread(() -> {
             if (gui != null) {
                 gui.appendMessage("Sistema", "Baixando arquivo: " + filename + "...");
             }
-            
+
             File downloadedFile = udpFileDownloadClient.downloadFile(filename);
-            
+
             if (gui != null) {
                 if (downloadedFile != null) {
                     gui.appendMessage("Sistema", "Arquivo baixado com sucesso: " + filename);
@@ -222,7 +200,7 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
             }
         }).start();
     }
-    
+
     public String[] getAvailableFiles() {
         try {
             if (chatService != null) {
@@ -233,75 +211,78 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         }
         return new String[0];
     }
-    
+
     @Override
     public void onUsersUpdated(String[] users) throws RemoteException {
         if (gui != null) {
             gui.updateUsersList(users);
         }
     }
-    
+
     @Override
     public void onGroupCreated(com.chatrmi.interfaces.ChatService.GroupInfo groupInfo) throws RemoteException {
         if (gui != null) {
             gui.onGroupCreated(groupInfo);
         }
     }
-    
+
     @Override
     public void onGroupInviteReceived(String groupId, String groupName, String inviterUsername) throws RemoteException {
         if (gui != null) {
             gui.onGroupInviteReceived(groupId, groupName, inviterUsername);
         }
     }
-    
+
     @Override
-    public void onJoinRequestReceived(String groupId, String groupName, String requestingUsername) throws RemoteException {
+    public void onJoinRequestReceived(String groupId, String groupName, String requestingUsername)
+            throws RemoteException {
         if (gui != null) {
             gui.onJoinRequestReceived(groupId, groupName, requestingUsername);
         }
     }
-    
+
     @Override
-    public void onGroupUpdated(String groupName, com.chatrmi.interfaces.ChatService.GroupInfo groupInfo) throws RemoteException {
+    public void onGroupUpdated(String groupName, com.chatrmi.interfaces.ChatService.GroupInfo groupInfo)
+            throws RemoteException {
         if (gui != null) {
             gui.onGroupUpdated(groupName, groupInfo);
         }
     }
-    
+
     @Override
-    public void onGroupMessageReceived(String groupId, String groupName, String username, String message) throws RemoteException {
+    public void onGroupMessageReceived(String groupId, String groupName, String username, String message)
+            throws RemoteException {
         if (gui != null) {
             gui.onGroupMessageReceived(groupId, groupName, username, message);
         }
     }
-    
+
     @Override
     public void onGroupJoinRequestProcessed(String groupId, String groupName, boolean approved) throws RemoteException {
         if (gui != null) {
             gui.onGroupJoinRequestProcessed(groupId, groupName, approved);
         }
     }
-    
+
     @Override
     public void onAddedToGroup(String groupId, String groupName) throws RemoteException {
         if (gui != null) {
             gui.onAddedToGroup(groupId, groupName);
         }
     }
-    
+
     public void setGUI(ChatClientGUI gui) {
         this.gui = gui;
     }
-    
+
     public String getUsername() {
         return username;
     }
-    
+
     public ChatService getChatService() {
         return chatService;
     }
-    
+
     public String createGroup(String groupName) {
         try {
             if (chatService != null) {
@@ -312,7 +293,7 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         }
         return null;
     }
-    
+
     public ChatService.GroupInfo[] getAvailableGroups() {
         try {
             if (chatService != null) {
@@ -323,7 +304,7 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         }
         return new ChatService.GroupInfo[0];
     }
-    
+
     public ChatService.GroupInfo[] getUserGroups() {
         try {
             if (chatService != null) {
@@ -334,7 +315,7 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         }
         return new ChatService.GroupInfo[0];
     }
-    
+
     public void inviteToGroup(String groupId, String invitedUsername) {
         try {
             if (chatService != null) {
@@ -347,7 +328,7 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
             }
         }
     }
-    
+
     public void requestJoinGroup(String groupId) {
         try {
             if (chatService != null) {
@@ -360,7 +341,7 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
             }
         }
     }
-    
+
     public void processJoinRequest(String groupId, String requestingUsername, boolean approved) {
         try {
             if (chatService != null) {
@@ -373,7 +354,7 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
             }
         }
     }
-    
+
     public void processInvite(String groupId, boolean accepted) {
         try {
             if (chatService != null) {
@@ -386,7 +367,7 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
             }
         }
     }
-    
+
     public void sendGroupMessage(String groupId, String message) {
         try {
             if (chatService != null) {
@@ -396,7 +377,7 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
             System.err.println("Erro ao enviar mensagem de grupo: " + e.getMessage());
         }
     }
-    
+
     public String[] getPendingRequests(String groupId) {
         try {
             if (chatService != null) {
@@ -407,7 +388,7 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         }
         return new String[0];
     }
-    
+
     public ChatService.GroupInfo[] getPendingInvites() {
         try {
             if (chatService != null) {
@@ -418,7 +399,7 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         }
         return new ChatService.GroupInfo[0];
     }
-    
+
     public void leaveGroup(String groupId) {
         try {
             if (chatService != null) {
@@ -432,4 +413,3 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         }
     }
 }
-

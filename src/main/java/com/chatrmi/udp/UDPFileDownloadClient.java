@@ -68,8 +68,6 @@ public class UDPFileDownloadClient {
             String receivedFilename = new String(filenameBytes, StandardCharsets.UTF_8);
             long fileSize = buffer.getLong();
             
-            System.out.println("Recebendo arquivo: " + receivedFilename + " (" + fileSize + " bytes)");
-            
             File file = new File(downloadDir, receivedFilename);
             try (FileOutputStream fos = new FileOutputStream(file)) {
                 long received = 0;
@@ -92,7 +90,6 @@ public class UDPFileDownloadClient {
                 }
             }
             
-            System.out.println("Arquivo baixado com sucesso: " + receivedFilename);
             return file;
             
         } catch (IOException e) {

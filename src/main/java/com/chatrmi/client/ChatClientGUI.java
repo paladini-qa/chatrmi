@@ -269,10 +269,6 @@ public class ChatClientGUI extends JFrame {
             username = username.trim();
 
             try {
-                System.out.println("\n=== INICIANDO CLIENTE ===");
-                System.out.println("Usuário: " + username);
-                System.out.println("Servidor: " + serverHost);
-                
                 ChatClient client = new ChatClient(username, serverHost);
                 ChatClientGUI gui = new ChatClientGUI(client);
                 gui.setVisible(true);

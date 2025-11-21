@@ -60,8 +60,6 @@ public class UDPFileClient {
             );
             socket.send(headerPacket);
             
-            System.out.println("Enviando arquivo: " + filename + " (" + fileSize + " bytes)");
-            
             byte[] buffer = new byte[8192];
             long sent = 0;
             
@@ -78,7 +76,6 @@ public class UDPFileClient {
                 Thread.sleep(1);
             }
             
-            System.out.println("Arquivo enviado com sucesso!");
             return true;
             
         } catch (IOException | InterruptedException e) {

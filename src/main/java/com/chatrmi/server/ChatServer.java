@@ -25,12 +25,9 @@ public class ChatServer {
             return (ChatService) UnicastRemoteObject.exportObject(chatService, preferredPort);
         } catch (ExportException e) {
             if (e.getCause() instanceof BindException) {
-                System.out.println("Porta " + preferredPort + " está em uso. Tentando portas alternativas...");
-                
                 for (int port = preferredPort + 1; port <= preferredPort + 7; port++) {
                     try {
                         ChatService stub = (ChatService) UnicastRemoteObject.exportObject(chatService, port);
-                        System.out.println("[OK] Objeto RMI exportado na porta alternativa: " + port);
                         return stub;
                     } catch (ExportException ex) {
                         if (!(ex.getCause() instanceof BindException)) {
@@ -71,56 +68,11 @@ public class ChatServer {
         }
     }
     
-    private static void printNetworkInfo(String serverHost) {
-        System.out.println("\n=== INFORMAÇÕES DE REDE ===");
-        System.out.println("IP do servidor configurado: " + serverHost);
-        try {
-            java.net.InetAddress addr = java.net.InetAddress.getByName(serverHost);
-            System.out.println("Endereço resolvido: " + addr.getHostAddress());
-            
-            System.out.println("\nInterfaces de rede disponíveis:");
-            java.net.NetworkInterface.getNetworkInterfaces().asIterator().forEachRemaining(iface -> {
-                try {
-                    if (!iface.isLoopback() && iface.isUp()) {
-                        System.out.println("  - " + iface.getName() + ":");
-                        iface.getInetAddresses().asIterator().forEachRemaining(inetAddr -> {
-                            if (inetAddr instanceof java.net.Inet4Address) {
-                                System.out.println("    -> " + inetAddr.getHostAddress());
-                            }
-                        });
-                    }
-                } catch (Exception e) {
-                    // Ignorar
-                }
-            });
-        } catch (Exception e) {
-            System.err.println("Erro ao obter informações de rede: " + e.getMessage());
-        }
-        System.out.println("============================\n");
-    }
-    
     public static void main(String[] args) {
         try {
             // Obter IP do servidor (padrão: IP local)
             String serverHost = args.length > 0 ? args[0] : getLocalIP();
             System.setProperty("java.rmi.server.hostname", serverHost);
-            
-            System.out.println("========================================");
-            System.out.println("  SERVIDOR CHAT RMI - MODO REDE");
-            System.out.println("========================================");
-            System.out.println("IP do servidor: " + serverHost);
-            System.out.println("========================================\n");
-            
-            // Mostrar informações de rede
-            printNetworkInfo(serverHost);
-            
-            System.out.println("IMPORTANTE: Para conectar de outro PC, use este IP: " + serverHost);
-            System.out.println("Certifique-se de que o firewall permite conexões nas portas:");
-            System.out.println("  - 1099 (RMI Registry)");
-            System.out.println("  - 1098 (RMI Server)");
-            System.out.println("  - 9876 (UDP File Server)");
-            System.out.println("  - 9877 (UDP Download Server)");
-            System.out.println();
             
             ChatServiceImpl chatService = new ChatServiceImpl();
             ChatService stub = exportObject(chatService, RMI_SERVER_PORT);
@@ -128,14 +80,11 @@ public class ChatServer {
             Registry registry;
             try {
                 registry = LocateRegistry.createRegistry(RMI_REGISTRY_PORT);
-                System.out.println("RMI Registry criado na porta " + RMI_REGISTRY_PORT);
             } catch (Exception e) {
                 registry = LocateRegistry.getRegistry(RMI_REGISTRY_PORT);
-                System.out.println("RMI Registry encontrado na porta " + RMI_REGISTRY_PORT);
             }
             
             registry.rebind("ChatService", stub);
-            System.out.println("Servidor RMI iniciado e registrado como 'ChatService'");
             
             UDPFileServer udpFileServer = new UDPFileServer(UDP_FILE_PORT, chatService);
             Thread udpThread = new Thread(() -> {
@@ -148,7 +97,6 @@ public class ChatServer {
             });
             udpThread.setDaemon(true);
             udpThread.start();
-            System.out.println("Servidor UDP iniciado na porta " + UDP_FILE_PORT);
             
             UDPFileDownloadServer downloadServer = new UDPFileDownloadServer(UDP_DOWNLOAD_PORT);
             Thread downloadThread = new Thread(() -> {
@@ -161,10 +109,6 @@ public class ChatServer {
             });
             downloadThread.setDaemon(true);
             downloadThread.start();
-            System.out.println("Servidor UDP de download iniciado na porta " + UDP_DOWNLOAD_PORT);
-            
-            System.out.println("\n=== SERVIDOR PRONTO ===");
-            System.out.println("Pressione Ctrl+C para encerrar\n");
             
         } catch (Exception e) {
             System.err.println("\n[ERRO] Erro ao iniciar servidor: " + e.getMessage());
