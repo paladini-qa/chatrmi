@@ -173,6 +173,26 @@ public interface ChatService extends Remote {
      */
     GroupInfo getGroupInfo(String groupId) throws RemoteException;
     
+    // ========== MÉTODOS DE AUTENTICAÇÃO ==========
+    
+    /**
+     * Registra um novo usuário no sistema
+     * @param username Nome de usuário
+     * @param password Senha do usuário
+     * @return true se o cadastro foi bem-sucedido, false se o usuário já existe
+     * @throws RemoteException
+     */
+    boolean registerUser(String username, String password) throws RemoteException;
+    
+    /**
+     * Autentica um usuário
+     * @param username Nome de usuário
+     * @param password Senha do usuário
+     * @return true se as credenciais estão corretas, false caso contrário
+     * @throws RemoteException
+     */
+    boolean login(String username, String password) throws RemoteException;
+    
     /**
      * Classe para informações de grupo
      */

@@ -23,6 +23,7 @@ public class ChatServiceImpl implements ChatService {
     private Map<String, Group> groups; // groupId -> Group
     private Map<String, Set<String>> userGroups; // username -> Set<groupId>
     private Map<String, Set<String>> pendingInvites; // username -> Set<groupId>
+    private Map<String, String> users; // username -> password (armazenamento em memória)
     private int groupIdCounter;
     
     public ChatServiceImpl() throws RemoteException {
@@ -31,6 +32,7 @@ public class ChatServiceImpl implements ChatService {
         this.groups = new ConcurrentHashMap<>();
         this.userGroups = new ConcurrentHashMap<>();
         this.pendingInvites = new ConcurrentHashMap<>();
+        this.users = new ConcurrentHashMap<>();
         this.groupIdCounter = 1;
     }
     
@@ -436,6 +438,58 @@ public class ChatServiceImpl implements ChatService {
                 }
             }
         });
+    }
+    
+    @Override
+    public boolean registerUser(String username, String password) throws RemoteException {
+        if (username == null || username.trim().isEmpty()) {
+            return false;
+        }
+        
+        if (password == null || password.isEmpty()) {
+            return false;
+        }
+        
+        username = username.trim();
+        
+        // Verificar se o usuário já existe
+        if (users.containsKey(username)) {
+            System.out.println("Tentativa de cadastro com usuário já existente: " + username);
+            return false;
+        }
+        
+        // Cadastrar novo usuário
+        users.put(username, password);
+        System.out.println("Novo usuário cadastrado: " + username);
+        return true;
+    }
+    
+    @Override
+    public boolean login(String username, String password) throws RemoteException {
+        if (username == null || username.trim().isEmpty()) {
+            return false;
+        }
+        
+        if (password == null || password.isEmpty()) {
+            return false;
+        }
+        
+        username = username.trim();
+        
+        // Verificar se o usuário existe e a senha está correta
+        String storedPassword = users.get(username);
+        if (storedPassword == null) {
+            System.out.println("Tentativa de login com usuário inexistente: " + username);
+            return false;
+        }
+        
+        if (!storedPassword.equals(password)) {
+            System.out.println("Tentativa de login com senha incorreta para: " + username);
+            return false;
+        }
+        
+        System.out.println("Login bem-sucedido: " + username);
+        return true;
     }
     
     public static class ChatSubject extends Subject {
