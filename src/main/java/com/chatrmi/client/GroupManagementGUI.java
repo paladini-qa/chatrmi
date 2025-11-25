@@ -403,9 +403,14 @@ public class GroupManagementGUI extends JFrame {
     }
     
     public void onGroupMessageReceived(String groupId, String groupName, String username, String message) {
+        boolean isSent = username.equals(client.getUsername());
+        // Salvar no histórico mesmo se a janela não estiver aberta
+        if (!isSent) {
+            client.addToGroupHistory(groupId, username, message, false, MessageHistory.MessageType.TEXT);
+        }
+        
         GroupChatGUI chatWindow = openGroupChats.get(groupId);
         if (chatWindow != null) {
-            boolean isSent = username.equals(client.getUsername());
             if (!isSent) {
                 chatWindow.appendMessage(username, message, false);
             }
@@ -413,9 +418,12 @@ public class GroupManagementGUI extends JFrame {
     }
     
     public void onGroupFileReceived(String groupId, String groupName, String username, String filename) {
+        boolean isSent = username.equals(client.getUsername());
+        // Salvar no histórico mesmo se a janela não estiver aberta
+        client.addToGroupHistory(groupId, username, filename, isSent, MessageHistory.MessageType.FILE);
+        
         GroupChatGUI chatWindow = openGroupChats.get(groupId);
         if (chatWindow != null) {
-            boolean isSent = username.equals(client.getUsername());
             chatWindow.appendFile(username, filename, isSent);
         }
     }

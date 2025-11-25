@@ -123,7 +123,51 @@ public class GroupChatGUI extends JFrame {
         add(sidePanel, BorderLayout.EAST);
         
         messageField.requestFocus();
+        
+        // Restaurar histórico antes de mostrar mensagem de entrada
+        restoreHistory();
         appendMessage("Sistema", "Você entrou no grupo: " + groupName, false);
+    }
+    
+    /**
+     * Restaura o histórico de mensagens do grupo
+     */
+    private void restoreHistory() {
+        java.util.List<MessageHistory> history = client.getGroupHistory(groupId);
+        for (MessageHistory msg : history) {
+            String timestamp = msg.getTimestamp().format(
+                java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+            );
+            
+            if (msg.getType() == MessageHistory.MessageType.TEXT) {
+                MessageBubble bubble = new MessageBubble(
+                    msg.getUsername(), 
+                    msg.getContent(), 
+                    timestamp, 
+                    msg.isSent()
+                );
+                chatArea.add(bubble);
+                chatArea.add(Box.createVerticalStrut(4));
+            } else {
+                FileBubble fileBubble = new FileBubble(
+                    msg.getUsername(), 
+                    msg.getContent(), 
+                    timestamp, 
+                    msg.isSent(), 
+                    client
+                );
+                chatArea.add(fileBubble);
+                chatArea.add(Box.createVerticalStrut(4));
+            }
+        }
+        chatArea.revalidate();
+        chatArea.repaint();
+        
+        // Scroll para o final após restaurar
+        SwingUtilities.invokeLater(() -> {
+            JScrollBar vertical = scrollPane.getVerticalScrollBar();
+            vertical.setValue(vertical.getMaximum());
+        });
     }
     
     private void updateMembersList() {
@@ -174,6 +218,12 @@ public class GroupChatGUI extends JFrame {
                 java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
             );
             
+            // Salvar no histórico (exceto mensagens do sistema de entrada)
+            // Mensagens enviadas pelo próprio usuário devem ser salvas
+            if (isSent && (!"Sistema".equals(username) || !message.contains("entrou no grupo"))) {
+                client.addToGroupHistory(groupId, username, message, isSent, MessageHistory.MessageType.TEXT);
+            }
+            
             MessageBubble bubble = new MessageBubble(username, message, timestamp, isSent);
             chatArea.add(bubble);
             chatArea.add(Box.createVerticalStrut(4));
@@ -194,6 +244,11 @@ public class GroupChatGUI extends JFrame {
             String timestamp = now.format(
                 java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
             );
+            
+            // Salvar no histórico (arquivos enviados pelo próprio usuário)
+            if (isSent) {
+                client.addToGroupHistory(groupId, username, filename, isSent, MessageHistory.MessageType.FILE);
+            }
             
             FileBubble fileBubble = new FileBubble(username, filename, timestamp, isSent, client);
             chatArea.add(fileBubble);

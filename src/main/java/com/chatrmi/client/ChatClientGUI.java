@@ -124,7 +124,9 @@ public class ChatClientGUI extends JFrame {
 
     private void openGlobalChatWindow() {
         if (globalChatGUI == null || !globalChatGUI.isVisible()) {
-            globalChatGUI = new GlobalChatGUI(client);
+            if (globalChatGUI == null) {
+                globalChatGUI = new GlobalChatGUI(client);
+            }
             globalChatGUI.setVisible(true);
             globalChatGUI.toFront();
             globalChatGUI.requestFocus();
@@ -150,8 +152,13 @@ public class ChatClientGUI extends JFrame {
     }
 
     public void appendMessage(String username, String message) {
+        boolean isSent = username.equals(client.getUsername());
+        // Salvar no histórico mesmo se a janela não estiver aberta
+        if (!isSent) {
+            client.addToGlobalHistory(username, message, false, MessageHistory.MessageType.TEXT);
+        }
+        
         if (globalChatGUI != null && globalChatGUI.isVisible()) {
-            boolean isSent = username.equals(client.getUsername());
             if (!isSent) {
                 globalChatGUI.appendMessage(username, message, false);
             }
@@ -159,8 +166,11 @@ public class ChatClientGUI extends JFrame {
     }
 
     public void appendFile(String username, String filename) {
+        boolean isSent = username.equals(client.getUsername());
+        // Salvar no histórico mesmo se a janela não estiver aberta
+        client.addToGlobalHistory(username, filename, isSent, MessageHistory.MessageType.FILE);
+        
         if (globalChatGUI != null && globalChatGUI.isVisible()) {
-            boolean isSent = username.equals(client.getUsername());
             globalChatGUI.appendFile(username, filename, isSent);
         }
     }

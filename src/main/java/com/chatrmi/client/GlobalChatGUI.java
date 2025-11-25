@@ -23,6 +23,7 @@ public class GlobalChatGUI extends JFrame {
         int result = fileChooser.showOpenDialog(this);
         if (result == JFileChooser.APPROVE_OPTION) {
             java.io.File selectedFile = fileChooser.getSelectedFile();
+            // appendFile já salva no histórico, então apenas chamamos
             appendFile(client.getUsername(), selectedFile.getName(), true);
             client.sendFile(selectedFile);
         }
@@ -107,12 +108,57 @@ public class GlobalChatGUI extends JFrame {
         add(chatPanel, BorderLayout.CENTER);
         
         messageField.requestFocus();
+        
+        // Restaurar histórico antes de mostrar mensagem de boas-vindas
+        restoreHistory();
         appendMessage("Sistema", "Bem-vindo ao chat global!", false);
+    }
+    
+    /**
+     * Restaura o histórico de mensagens do chat global
+     */
+    private void restoreHistory() {
+        java.util.List<MessageHistory> history = client.getGlobalHistory();
+        for (MessageHistory msg : history) {
+            String timestamp = msg.getTimestamp().format(
+                java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+            );
+            
+            if (msg.getType() == MessageHistory.MessageType.TEXT) {
+                MessageBubble bubble = new MessageBubble(
+                    msg.getUsername(), 
+                    msg.getContent(), 
+                    timestamp, 
+                    msg.isSent()
+                );
+                chatArea.add(bubble);
+                chatArea.add(Box.createVerticalStrut(4));
+            } else {
+                FileBubble fileBubble = new FileBubble(
+                    msg.getUsername(), 
+                    msg.getContent(), 
+                    timestamp, 
+                    msg.isSent(), 
+                    client
+                );
+                chatArea.add(fileBubble);
+                chatArea.add(Box.createVerticalStrut(4));
+            }
+        }
+        chatArea.revalidate();
+        chatArea.repaint();
+        
+        // Scroll para o final após restaurar
+        SwingUtilities.invokeLater(() -> {
+            JScrollBar vertical = scrollPane.getVerticalScrollBar();
+            vertical.setValue(vertical.getMaximum());
+        });
     }
     
     private void sendMessage() {
         String message = messageField.getText().trim();
         if (!message.isEmpty()) {
+            // appendMessage já salva no histórico, então apenas chamamos
             appendMessage(client.getUsername(), message, true);
             client.sendMessage(message);
             messageField.setText("");
@@ -125,6 +171,12 @@ public class GlobalChatGUI extends JFrame {
             String timestamp = now.format(
                 java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
             );
+            
+            // Salvar no histórico (exceto mensagens do sistema de boas-vindas)
+            // Mensagens enviadas pelo próprio usuário devem ser salvas
+            if (isSent && (!"Sistema".equals(username) || !message.contains("Bem-vindo"))) {
+                client.addToGlobalHistory(username, message, isSent, MessageHistory.MessageType.TEXT);
+            }
             
             MessageBubble bubble = new MessageBubble(username, message, timestamp, isSent);
             chatArea.add(bubble);
@@ -146,6 +198,11 @@ public class GlobalChatGUI extends JFrame {
             String timestamp = now.format(
                 java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
             );
+            
+            // Salvar no histórico (arquivos enviados pelo próprio usuário)
+            if (isSent) {
+                client.addToGlobalHistory(username, filename, isSent, MessageHistory.MessageType.FILE);
+            }
             
             FileBubble fileBubble = new FileBubble(username, filename, timestamp, isSent, client);
             chatArea.add(fileBubble);

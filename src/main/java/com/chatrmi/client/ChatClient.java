@@ -13,6 +13,8 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Cliente do chat RMI com implementação de callback
@@ -27,6 +29,10 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
     private String serverHost;
     private static final int UDP_FILE_PORT = 9876;
     private static final int UDP_DOWNLOAD_PORT = 9877;
+    
+    // Histórico de mensagens
+    private List<MessageHistory> globalChatHistory;
+    private Map<String, List<MessageHistory>> groupChatHistories; // groupId -> histórico
     
     /**
      * Obtém o IP local do cliente (não loopback)
@@ -81,6 +87,10 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         
         this.udpFileClient = new UDPFileClient(this.serverHost, UDP_FILE_PORT);
         this.udpFileDownloadClient = new UDPFileDownloadClient(this.serverHost, UDP_DOWNLOAD_PORT);
+        
+        // Inicializar histórico de mensagens
+        this.globalChatHistory = Collections.synchronizedList(new ArrayList<>());
+        this.groupChatHistories = new ConcurrentHashMap<>();
     }
     
     public boolean connect() {
@@ -430,6 +440,45 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
                 gui.appendMessage("Sistema", "Erro ao sair do grupo: " + e.getMessage());
             }
         }
+    }
+    
+    // ========== MÉTODOS DE HISTÓRICO ==========
+    
+    /**
+     * Adiciona uma mensagem ao histórico do chat global
+     */
+    public void addToGlobalHistory(String username, String content, boolean isSent, MessageHistory.MessageType type) {
+        MessageHistory msg = new MessageHistory(
+            username, 
+            content, 
+            java.time.LocalDateTime.now(), 
+            isSent, 
+            type
+        );
+        globalChatHistory.add(msg);
+    }
+    
+    /**
+     * Adiciona uma mensagem ao histórico de um grupo
+     */
+    public void addToGroupHistory(String groupId, String username, String content, boolean isSent, MessageHistory.MessageType type) {
+        groupChatHistories.computeIfAbsent(groupId, k -> Collections.synchronizedList(new ArrayList<>()))
+            .add(new MessageHistory(username, content, java.time.LocalDateTime.now(), isSent, type));
+    }
+    
+    /**
+     * Retorna o histórico do chat global
+     */
+    public List<MessageHistory> getGlobalHistory() {
+        return new ArrayList<>(globalChatHistory);
+    }
+    
+    /**
+     * Retorna o histórico de um grupo específico
+     */
+    public List<MessageHistory> getGroupHistory(String groupId) {
+        List<MessageHistory> history = groupChatHistories.get(groupId);
+        return history != null ? new ArrayList<>(history) : new ArrayList<>();
     }
 }
 
