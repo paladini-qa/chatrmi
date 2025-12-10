@@ -399,6 +399,66 @@ public class ChatServiceImpl implements ChatService {
     }
     
     @Override
+    public void removeFromGroup(String groupId, String ownerUsername, String memberUsername) throws RemoteException {
+        Group group = groups.get(groupId);
+        if (group == null) {
+            throw new RemoteException("Grupo não encontrado");
+        }
+        
+        if (!group.isOwner(ownerUsername)) {
+            throw new RemoteException("Apenas o dono do grupo pode remover membros");
+        }
+        
+        if (!group.isMember(memberUsername)) {
+            throw new RemoteException("Usuário não é membro do grupo");
+        }
+        
+        if (memberUsername.equals(ownerUsername)) {
+            throw new RemoteException("O dono não pode remover a si mesmo");
+        }
+        
+        group.removeMember(memberUsername);
+        userGroups.getOrDefault(memberUsername, Collections.emptySet()).remove(groupId);
+        System.out.println("Usuário " + memberUsername + " foi removido do grupo " + group.getGroupName() + " por " + ownerUsername);
+        
+        // Notificar o usuário removido
+        ChatClientCallback removedUserCallback = clients.get(memberUsername);
+        if (removedUserCallback != null) {
+            try {
+                removedUserCallback.onRemovedFromGroup(groupId, group.getGroupName());
+            } catch (RemoteException e) {
+                System.err.println("Erro ao notificar usuário removido: " + e.getMessage());
+            }
+        }
+        
+        // Atualizar os outros membros
+        ChatService.GroupInfo groupInfo = convertToGroupInfo(group);
+        broadcastGroupUpdate(groupId, groupInfo);
+    }
+    
+    @Override
+    public void notifyGroupFile(String groupId, String username, String filename) throws RemoteException {
+        Group group = groups.get(groupId);
+        if (group == null || !group.isMember(username)) {
+            throw new RemoteException("Grupo não encontrado ou usuário não é membro");
+        }
+        
+        System.out.println("[GRUPO:" + group.getGroupName() + "] [" + username + "] enviou arquivo: " + filename);
+        
+        group.getMembers().forEach(member -> {
+            ChatClientCallback callback = clients.get(member);
+            if (callback != null) {
+                try {
+                    callback.onGroupFileReceived(groupId, group.getGroupName(), username, filename);
+                } catch (RemoteException e) {
+                    System.err.println("Erro ao notificar arquivo de grupo para " + member + ": " + e.getMessage());
+                    clients.remove(member);
+                }
+            }
+        });
+    }
+    
+    @Override
     public ChatService.GroupInfo getGroupInfo(String groupId) throws RemoteException {
         Group group = groups.get(groupId);
         if (group == null) {

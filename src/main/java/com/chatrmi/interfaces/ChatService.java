@@ -166,6 +166,24 @@ public interface ChatService extends Remote {
     void leaveGroup(String groupId, String username) throws RemoteException;
     
     /**
+     * Remove um membro do grupo (apenas dono pode fazer isso)
+     * @param groupId ID do grupo
+     * @param ownerUsername Nome do dono do grupo
+     * @param memberUsername Nome do membro a ser removido
+     * @throws RemoteException
+     */
+    void removeFromGroup(String groupId, String ownerUsername, String memberUsername) throws RemoteException;
+    
+    /**
+     * Notifica o envio de um arquivo para um grupo
+     * @param groupId ID do grupo
+     * @param username Nome do usuário que enviou
+     * @param filename Nome do arquivo
+     * @throws RemoteException
+     */
+    void notifyGroupFile(String groupId, String username, String filename) throws RemoteException;
+    
+    /**
      * Obtém informações de um grupo específico
      * @param groupId ID do grupo
      * @return Informações do grupo

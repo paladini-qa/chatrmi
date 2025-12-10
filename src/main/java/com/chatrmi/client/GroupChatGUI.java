@@ -116,8 +116,24 @@ public class GroupChatGUI extends JFrame {
         
         updateMembersList();
         
+        // Botão de remover membro (só aparece para o dono)
+        JButton removeMemberButton = new JButton("Remover Membro");
+        removeMemberButton.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
+        removeMemberButton.setBackground(new Color(0xDC, 0x35, 0x45));
+        removeMemberButton.setForeground(Color.WHITE);
+        removeMemberButton.setFocusPainted(false);
+        removeMemberButton.addActionListener(e -> removeMember());
+        
+        // Só mostra o botão se for o dono do grupo
+        boolean isOwner = groupInfo != null && groupInfo.getOwner().equals(client.getUsername());
+        removeMemberButton.setVisible(isOwner);
+        
+        JPanel memberButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        memberButtonPanel.add(removeMemberButton);
+        
         sidePanel.add(membersLabel, BorderLayout.NORTH);
         sidePanel.add(membersScrollPane, BorderLayout.CENTER);
+        sidePanel.add(memberButtonPanel, BorderLayout.SOUTH);
         
         add(chatPanel, BorderLayout.CENTER);
         add(sidePanel, BorderLayout.EAST);
@@ -198,7 +214,45 @@ public class GroupChatGUI extends JFrame {
         if (result == JFileChooser.APPROVE_OPTION) {
             java.io.File selectedFile = fileChooser.getSelectedFile();
             appendFile(client.getUsername(), selectedFile.getName(), true);
-            client.sendFile(selectedFile);
+            // Usar sendGroupFile para enviar arquivo para o grupo específico
+            client.sendGroupFile(selectedFile, groupId);
+        }
+    }
+    
+    private void removeMember() {
+        String selected = membersList.getSelectedValue();
+        if (selected == null) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Selecione um membro para remover",
+                "Aviso",
+                JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+        
+        // Remover sufixo "(Dono)" se existir
+        String memberUsername = selected.replace(" (Dono)", "").trim();
+        
+        if (memberUsername.equals(client.getUsername())) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Você não pode remover a si mesmo",
+                "Erro",
+                JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
+        
+        int confirm = JOptionPane.showConfirmDialog(
+            this,
+            "Deseja realmente remover " + memberUsername + " do grupo?",
+            "Confirmar Remoção",
+            JOptionPane.YES_NO_OPTION
+        );
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            client.removeFromGroup(groupId, memberUsername);
         }
     }
     

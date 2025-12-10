@@ -93,6 +93,24 @@ public interface ChatClientCallback extends Remote {
      */
     void onAddedToGroup(String groupId, String groupName) throws RemoteException;
     
+    /**
+     * Notifica quando foi removido de um grupo
+     * @param groupId ID do grupo
+     * @param groupName Nome do grupo
+     * @throws RemoteException
+     */
+    void onRemovedFromGroup(String groupId, String groupName) throws RemoteException;
+    
+    /**
+     * Notifica sobre arquivo recebido em grupo
+     * @param groupId ID do grupo
+     * @param groupName Nome do grupo
+     * @param username Nome do usuário que enviou
+     * @param filename Nome do arquivo
+     * @throws RemoteException
+     */
+    void onGroupFileReceived(String groupId, String groupName, String username, String filename) throws RemoteException;
+    
     // GroupInfo é a mesma classe de ChatService, então não precisa duplicar
 }
 

@@ -300,6 +300,20 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
         }
     }
     
+    @Override
+    public void onRemovedFromGroup(String groupId, String groupName) throws RemoteException {
+        if (gui != null) {
+            gui.onRemovedFromGroup(groupId, groupName);
+        }
+    }
+    
+    @Override
+    public void onGroupFileReceived(String groupId, String groupName, String username, String filename) throws RemoteException {
+        if (gui != null) {
+            gui.onGroupFileReceived(groupId, groupName, username, filename);
+        }
+    }
+    
     public void setGUI(ChatClientGUI gui) {
         this.gui = gui;
     }
@@ -440,6 +454,36 @@ public class ChatClient extends UnicastRemoteObject implements ChatClientCallbac
                 gui.appendMessage("Sistema", "Erro ao sair do grupo: " + e.getMessage());
             }
         }
+    }
+    
+    public void removeFromGroup(String groupId, String memberUsername) {
+        try {
+            if (chatService != null) {
+                chatService.removeFromGroup(groupId, username, memberUsername);
+            }
+        } catch (RemoteException e) {
+            System.err.println("Erro ao remover membro: " + e.getMessage());
+            if (gui != null) {
+                gui.appendMessage("Sistema", "Erro ao remover membro: " + e.getMessage());
+            }
+        }
+    }
+    
+    public void sendGroupFile(java.io.File file, String groupId) {
+        new Thread(() -> {
+            // Primeiro enviar o arquivo via UDP
+            boolean sent = udpFileClient.sendFile(file, username);
+            if (sent) {
+                // Depois notificar o grupo sobre o arquivo
+                try {
+                    if (chatService != null) {
+                        chatService.notifyGroupFile(groupId, username, file.getName());
+                    }
+                } catch (RemoteException e) {
+                    System.err.println("Erro ao notificar arquivo de grupo: " + e.getMessage());
+                }
+            }
+        }).start();
     }
     
     // ========== MÉTODOS DE HISTÓRICO ==========

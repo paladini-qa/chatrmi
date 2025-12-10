@@ -591,5 +591,24 @@ public class GroupManagementGUI extends JFrame {
             refreshAll();
         });
     }
+    
+    public void onRemovedFromGroup(String groupId, String groupName) {
+        SwingUtilities.invokeLater(() -> {
+            // Fechar janela de chat do grupo se estiver aberta
+            GroupChatGUI chatWindow = openGroupChats.get(groupId);
+            if (chatWindow != null) {
+                chatWindow.dispose();
+                openGroupChats.remove(groupId);
+            }
+            
+            JOptionPane.showMessageDialog(
+                this,
+                "Você foi removido do grupo: " + groupName,
+                "Removido do Grupo",
+                JOptionPane.WARNING_MESSAGE
+            );
+            refreshAll();
+        });
+    }
 }
 

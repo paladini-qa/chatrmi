@@ -261,6 +261,15 @@ public class ChatClientGUI extends JFrame {
         }
     }
 
+    public void onRemovedFromGroup(String groupId, String groupName) {
+        if (globalChatGUI != null && globalChatGUI.isVisible()) {
+            globalChatGUI.appendMessage("Sistema", "Você foi removido do grupo: " + groupName, false);
+        }
+        if (groupManagementGUI != null) {
+            groupManagementGUI.onRemovedFromGroup(groupId, groupName);
+        }
+    }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
             String serverHost = args.length > 0 ? args[0] : "localhost";
