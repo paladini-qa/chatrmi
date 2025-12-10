@@ -55,18 +55,52 @@ public class UDPFileServer {
         DatagramPacket headerPacket = new DatagramPacket(headerBuffer, headerBuffer.length);
         socket.receive(headerPacket);
         
-        ByteBuffer buffer = ByteBuffer.wrap(headerBuffer);
+        int receivedLength = headerPacket.getLength();
+        
+        // Validar tamanho mínimo do pacote (pelo menos 4 bytes para o primeiro int)
+        if (receivedLength < 4) {
+            System.err.println("Pacote UDP inválido: muito pequeno (" + receivedLength + " bytes)");
+            return;
+        }
+        
+        ByteBuffer buffer = ByteBuffer.wrap(headerBuffer, 0, receivedLength);
+        
+        // Ler e validar username
         int usernameLength = buffer.getInt();
+        if (usernameLength <= 0 || usernameLength > 256 || buffer.remaining() < usernameLength) {
+            System.err.println("Pacote UDP inválido: usernameLength inválido (" + usernameLength + ")");
+            return;
+        }
         byte[] usernameBytes = new byte[usernameLength];
         buffer.get(usernameBytes);
         String username = new String(usernameBytes, StandardCharsets.UTF_8);
         
+        // Validar se ainda há dados para ler filenameLength
+        if (buffer.remaining() < 4) {
+            System.err.println("Pacote UDP inválido: dados insuficientes para filenameLength");
+            return;
+        }
+        
         int filenameLength = buffer.getInt();
+        if (filenameLength <= 0 || filenameLength > 512 || buffer.remaining() < filenameLength) {
+            System.err.println("Pacote UDP inválido: filenameLength inválido (" + filenameLength + ")");
+            return;
+        }
         byte[] filenameBytes = new byte[filenameLength];
         buffer.get(filenameBytes);
         String filename = new String(filenameBytes, StandardCharsets.UTF_8);
         
+        // Validar se ainda há dados para ler fileSize
+        if (buffer.remaining() < 8) {
+            System.err.println("Pacote UDP inválido: dados insuficientes para fileSize");
+            return;
+        }
+        
         long fileSize = buffer.getLong();
+        if (fileSize < 0 || fileSize > 100_000_000) { // Limite de 100MB
+            System.err.println("Pacote UDP inválido: fileSize inválido (" + fileSize + ")");
+            return;
+        }
         
         System.out.println("Recebendo arquivo: " + filename + " (" + fileSize + " bytes) de " + username);
         
@@ -80,6 +114,10 @@ public class UDPFileServer {
                 socket.receive(packet);
                 
                 int packetSize = packet.getLength();
+                if (packetSize == 0) {
+                    continue; // Ignorar pacotes vazios
+                }
+                
                 if (received + packetSize > fileSize) {
                     packetSize = (int) (fileSize - received);
                 }
